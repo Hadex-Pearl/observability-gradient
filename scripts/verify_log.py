@@ -1,16 +1,36 @@
-"""Reports on a run log JSONL file: row count, duplicate keys, rows per cell, errors, null tokens, spend.
+"""Reports on a run log JSONL file: row count, duplicate keys, rows per cell, errors, null tokens,
+spend, truncation rate per level, and per-level output token calibration stats (mean/median/p90/max).
 
 Usage: python scripts/verify_log.py path/to/run.jsonl
 """
 
 import argparse
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.logger import CELL_KEY_FIELDS, SchemaError, cell_key, read_rows, validate_row  # noqa: E402
+
+# Level 0 is the freest condition; if the cap is cutting more than this
+# fraction of responses off before the model has produced anything, the cap
+# is destroying the measurement rather than saving money on it.
+LEVEL_0_TRUNCATION_WARN_THRESHOLD = 0.10
+
+
+def percentile(sorted_values, pct):
+    if not sorted_values:
+        return None
+    k = (len(sorted_values) - 1) * pct
+    lo, hi = int(k), min(int(k) + 1, len(sorted_values) - 1)
+    if lo == hi:
+        return sorted_values[lo]
+    return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * (k - lo)
+
+
+def median(sorted_values):
+    return percentile(sorted_values, 0.5)
 
 
 def verify(path, model_configs=None):
@@ -21,6 +41,7 @@ def verify(path, model_configs=None):
     null_input = null_output = null_reasoning = 0
     total_spend = 0.0
     schema_errors = []
+    per_level = defaultdict(lambda: {"output_tokens": [], "truncated": 0, "total": 0})
 
     for row in rows:
         try:
@@ -43,6 +64,13 @@ def verify(path, model_configs=None):
                 out_tok = (row["output_tokens"] or 0) + (row["reasoning_tokens"] or 0)
                 total_spend += in_tok / 1_000_000 * cfg["price_per_million_in"]
                 total_spend += out_tok / 1_000_000 * cfg["price_per_million_out"]
+
+            level_stats = per_level[row["level"]]
+            level_stats["total"] += 1
+            if row["truncated"]:
+                level_stats["truncated"] += 1
+            if row["output_tokens"] is not None:
+                level_stats["output_tokens"].append(row["output_tokens"])
         else:
             error_types[row["error"].get("type", "unknown")] += 1
 
@@ -68,6 +96,35 @@ def verify(path, model_configs=None):
         for e in schema_errors[:10]:
             print(f"  {e}")
 
+    level_summary = {}
+    print("\nper-level output token calibration:")
+    print(f"{'level':<6}{'n':<6}{'mean':<8}{'median':<8}{'p90':<8}{'max':<8}{'truncation_rate':<16}")
+    for level in sorted(per_level):
+        stats = per_level[level]
+        tokens = sorted(stats["output_tokens"])
+        n = stats["total"]
+        truncation_rate = stats["truncated"] / n if n else 0.0
+        mean = sum(tokens) / len(tokens) if tokens else 0.0
+        med = median(tokens) or 0.0
+        p90 = percentile(tokens, 0.9) or 0.0
+        mx = max(tokens) if tokens else 0
+        print(f"{level:<6}{n:<6}{mean:<8.1f}{med:<8.1f}{p90:<8.1f}{mx:<8}{truncation_rate:<16.1%}")
+        level_summary[level] = {
+            "n": n,
+            "mean": mean,
+            "median": med,
+            "p90": p90,
+            "max": mx,
+            "truncation_rate": truncation_rate,
+        }
+
+    if 0 in level_summary and level_summary[0]["truncation_rate"] > LEVEL_0_TRUNCATION_WARN_THRESHOLD:
+        print(
+            f"\nWARNING: level 0 truncation rate is {level_summary[0]['truncation_rate']:.1%}, "
+            f"above the {LEVEL_0_TRUNCATION_WARN_THRESHOLD:.0%} threshold. The cap is cutting "
+            "responses before the model has started, not just after — raise max_tokens_by_level[0]."
+        )
+
     return {
         "rows": len(rows),
         "unique_cells": len(cell_counts),
@@ -78,6 +135,7 @@ def verify(path, model_configs=None):
         "null_reasoning": null_reasoning,
         "total_spend": total_spend,
         "schema_errors": schema_errors,
+        "level_summary": level_summary,
     }
 
 

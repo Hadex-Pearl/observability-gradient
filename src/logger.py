@@ -17,6 +17,7 @@ SCHEMA_FIELDS = [
     "messages",
     "raw_output",
     "finish_reason",
+    "truncated",
     "input_tokens",
     "output_tokens",
     "reasoning_tokens",
@@ -29,6 +30,15 @@ SCHEMA_FIELDS = [
 ]
 
 CELL_KEY_FIELDS = ("model", "item_id", "level", "arm", "run_index")
+
+# Finish-reason strings each provider uses to mean "hit the max_tokens cap."
+# Anthropic: "max_tokens". OpenAI-compatible (OpenAI, DeepSeek, Together):
+# "length". Google: "MAX_TOKENS".
+TRUNCATED_FINISH_REASONS = {"max_tokens", "length", "MAX_TOKENS"}
+
+
+def is_truncated(finish_reason):
+    return finish_reason in TRUNCATED_FINISH_REASONS
 
 
 class SchemaError(ValueError):

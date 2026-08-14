@@ -21,10 +21,21 @@ def call(provider_name, base_url, api_id, messages, *, max_tokens, temperature, 
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    # Reasoning-capable OpenAI models expose `reasoning_effort`; pin it to
-    # "minimal" so reasoning stays off when reasoning_enabled is False.
     if not reasoning_enabled and provider_name == "openai":
+        # Reasoning-capable OpenAI models expose `reasoning_effort`; pin it to
+        # "minimal" so reasoning stays off (or point config.py at a
+        # non-reasoning model, e.g. gpt-4o, if "minimal" isn't low enough).
         kwargs["reasoning_effort"] = "minimal"
+    elif reasoning_enabled and provider_name != "openai":
+        # DeepSeek and Together have no reasoning_effort-style toggle here:
+        # DeepSeek is disabled by choosing the deepseek-chat model id rather
+        # than deepseek-reasoner, and Together by choosing a non-reasoning
+        # model. Neither can be turned *on* through this adapter, so fail
+        # loudly instead of silently ignoring the request.
+        raise ProviderError(
+            f"{provider_name} adapter has no reasoning toggle; reasoning must stay disabled via model choice",
+            retryable=False,
+        )
 
     start = time.monotonic()
     try:

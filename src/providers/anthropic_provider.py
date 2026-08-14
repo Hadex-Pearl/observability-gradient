@@ -24,13 +24,17 @@ def call(api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_ke
         else:
             chat_messages.append({"role": m["role"], "content": m["content"]})
 
+    if reasoning_enabled:
+        raise ProviderError(
+            "anthropic adapter does not implement extended thinking; reasoning must stay disabled",
+            retryable=False,
+        )
+
     kwargs = dict(model=api_id, max_tokens=max_tokens, temperature=temperature, messages=chat_messages)
     if system is not None:
         kwargs["system"] = system
-    # Extended thinking is opt-in via the `thinking` param; simply omitting it
-    # keeps reasoning off. `reasoning_enabled` is accepted for interface
-    # symmetry with the other adapters and recorded on the row by the caller.
-    del reasoning_enabled
+    # Extended thinking (`thinking` param) is opt-in and simply never passed,
+    # which is the explicit "off" state for this provider.
 
     start = time.monotonic()
     try:

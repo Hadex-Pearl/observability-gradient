@@ -7,12 +7,21 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 
-from src.logger import CostTracker, JsonlLogger, load_completed_keys, read_rows
+from src.logger import CostTracker, JsonlLogger, is_truncated, load_completed_keys, read_rows
 from src.providers import get_adapter
 
 BACKOFF_BASE_SECONDS = 1.0
 BACKOFF_MAX_SECONDS = 60.0
 MAX_RETRIES = 5
+
+
+class ReasoningLeakError(RuntimeError):
+    """Raised when a provider returns reasoning_tokens despite reasoning being disabled.
+
+    This is a configuration failure, not a transient API error: it means every
+    call to this provider may be silently billing for invisible reasoning, so
+    the run halts immediately rather than retrying or logging-and-continuing.
+    """
 
 
 def prompt_hash(messages):
@@ -135,7 +144,14 @@ class RunHarness:
         reasoning_enabled,
         api_key,
     ):
-        """Executes one cell if not already completed. Returns a status string; never raises."""
+        """Executes one cell if not already completed. Returns a status string.
+
+        Never raises for API/network failures — those become error rows. Does
+        raise ReasoningLeakError if a provider returns reasoning tokens
+        despite reasoning being disabled, since that is a fatal
+        misconfiguration rather than a call-level failure.
+        """
+        assert temperature != 0, "temperature must never be 0 in the run path"
         key = (model, item_id, level, arm, run_index)
         if key in self.completed:
             return "skipped"
@@ -174,6 +190,7 @@ class RunHarness:
             "messages": messages,
             "raw_output": None,
             "finish_reason": None,
+            "truncated": None,
             "input_tokens": None,
             "output_tokens": None,
             "reasoning_tokens": None,
@@ -193,6 +210,7 @@ class RunHarness:
 
         row["raw_output"] = result.text
         row["finish_reason"] = result.finish_reason
+        row["truncated"] = is_truncated(result.finish_reason)
         row["input_tokens"] = result.input_tokens
         row["output_tokens"] = result.output_tokens
         row["reasoning_tokens"] = result.reasoning_tokens
@@ -206,6 +224,13 @@ class RunHarness:
             self.halted = True
             self.cost_tracker.print_summary()
             print("[halt] spend ceiling crossed, halting run")
+
+        if result.reasoning_tokens:
+            self.halted = True
+            raise ReasoningLeakError(
+                f"{model} returned reasoning_tokens={result.reasoning_tokens} on {item_id}/level={level}/"
+                f"{arm}/run={run_index} despite reasoning_enabled=False; halting run"
+            )
 
         return "ok"
 

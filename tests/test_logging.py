@@ -12,10 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from config import CONFIG  # noqa: E402
 from src.logger import read_rows, validate_row  # noqa: E402
 from src.providers import ADAPTERS  # noqa: E402
 from src.providers.base import ProviderError, ProviderResponse  # noqa: E402
-from src.runner import RunHarness  # noqa: E402
+from src.runner import ReasoningLeakError, RunHarness  # noqa: E402
 from scripts.verify_log import verify  # noqa: E402
 
 MODEL_NAME = "fake-cheap"
@@ -32,15 +33,21 @@ MODEL_CONFIGS = {
 
 
 class FakeProvider:
-    """Deterministic stand-in for a real provider adapter, with a hook to force one call to fail once."""
+    """Deterministic stand-in for a real provider adapter, with hooks to force one call to fail,
+    to come back truncated (finish_reason="length", output_tokens == the cap), or to leak reasoning
+    tokens despite being told reasoning is disabled."""
 
     def __init__(self):
         self.call_count = 0
         self.fail_once_for = set()
+        self.truncate_for = set()
+        self.leak_for = set()
         self._already_failed = set()
 
     def call(self, api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_key):
         self.call_count += 1
+        assert temperature != 0, "adapter received temperature=0"
+        assert reasoning_enabled is False, "adapter received reasoning_enabled=True"
         text = messages[-1]["content"]
         marker = text[text.index("[") + 1 : text.index("]")]
         if marker in self.fail_once_for and marker not in self._already_failed:
@@ -49,13 +56,23 @@ class FakeProvider:
 
         level = int(marker.split("level=")[1].split("|")[0])
         input_tokens = 50 + level * 20 + (len(text) % 7)
-        output_tokens = 10 + level * 5
+
+        if marker in self.truncate_for:
+            return ProviderResponse(
+                text=f"dummy response for {marker} (cut off mid",
+                finish_reason="length",
+                input_tokens=input_tokens,
+                output_tokens=max_tokens,
+                reasoning_tokens=None,
+                latency_ms=1,
+            )
+
         return ProviderResponse(
             text=f"dummy response for {marker}",
             finish_reason="stop",
             input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            reasoning_tokens=None,
+            output_tokens=10 + level * 5,
+            reasoning_tokens=7 if marker in self.leak_for else None,
             latency_ms=1,
         )
 
@@ -88,9 +105,9 @@ def run_cell(harness, item_id, level, arm, run_index):
         run_index=run_index,
         presentation_order="A_first" if arm == "A" else "B_first",
         messages=build_messages(item_id, level, arm, run_index),
-        max_tokens=64,
-        temperature=0.0,
-        reasoning_enabled=False,
+        max_tokens=CONFIG["max_tokens_by_level"][level],
+        temperature=CONFIG["temperature"],
+        reasoning_enabled=CONFIG["reasoning_enabled"],
         api_key="dummy",
     )
 
@@ -194,6 +211,43 @@ def main():
     assert result["error_types"].get("ProviderError") == 1
     assert not result["schema_errors"]
     print("PASS: verify_log.py reports match expectations")
+
+    # --- Phase 6: truncation is visible, never silent ----------------------
+    print("\n=== phase 6: truncation flag ===")
+    trunc_log = str(Path(tmp_dir) / "trunc.jsonl")
+    fake_trunc = FakeProvider()
+    ADAPTERS["fake"] = fake_trunc.call
+    trunc_cell = ("item1", 0, "A", 0)
+    fake_trunc.truncate_for.add(marker_for(*trunc_cell))
+
+    h_trunc = RunHarness(run_id="test-run-b", log_path=trunc_log, model_configs=MODEL_CONFIGS)
+    status = run_cell(h_trunc, *trunc_cell)
+    h_trunc.close()
+    assert status == "ok"
+    trunc_row = next(read_rows(trunc_log))
+    assert trunc_row["finish_reason"] == "length"
+    assert trunc_row["truncated"] is True
+    assert trunc_row["output_tokens"] == CONFIG["max_tokens_by_level"][0]
+    print("PASS: a length-capped response is flagged truncated=True with finish_reason recorded")
+
+    # --- Phase 7: a reasoning-token leak halts the run immediately ---------
+    print("\n=== phase 7: reasoning leak halts the run ===")
+    leak_log = str(Path(tmp_dir) / "leak.jsonl")
+    fake_leak = FakeProvider()
+    ADAPTERS["fake"] = fake_leak.call
+    leak_cell = ("item1", 0, "A", 0)
+    fake_leak.leak_for.add(marker_for(*leak_cell))
+
+    h_leak = RunHarness(run_id="test-run-c", log_path=leak_log, model_configs=MODEL_CONFIGS)
+    raised = False
+    try:
+        run_cell(h_leak, *leak_cell)
+    except ReasoningLeakError:
+        raised = True
+    assert raised, "nonzero reasoning_tokens must raise ReasoningLeakError, not warn and continue"
+    assert h_leak.halted is True
+    h_leak.close()
+    print("PASS: reasoning_tokens > 0 raised ReasoningLeakError and halted the run")
 
     shutil.rmtree(tmp_dir)
     print("\nALL TESTS PASSED")

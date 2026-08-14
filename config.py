@@ -65,9 +65,32 @@ CONFIG = {
         "figures_dir": ROOT_DIR / "report" / "figures",
     },
     "total_spend_ceiling_usd": 50.00,
-    "reasoning_enabled_default": False,
-    "max_tokens_default": 512,
-    "temperature_default": 0.0,
+
+    # Per-level output cap, sent as the API max_tokens parameter (never as a
+    # prompt instruction — models routinely ignore written brevity requests).
+    # Level 2 is a forced-choice level with no room for reasoning-out-loud in
+    # the visible text, hence the small cap; level 0 is the freest condition
+    # and gets the most room so genuine in-progress answers aren't cut off
+    # before they start (see calibration output in verify_log.py).
+    "max_tokens_by_level": {
+        3: 400,
+        2: 32,
+        1: 500,
+        0: 800,
+    },
+
+    # Fixed for every condition. At temperature 0 all repeated runs in a cell
+    # return the same response, which collapses the effective sample size to
+    # 1 — never set this to 0 anywhere in the run path (enforced by the
+    # assertion below and again in src/runner.py).
+    "temperature": 1.0,
+
+    # Reasoning/extended-thinking is disabled everywhere so token spend and
+    # output are comparable across providers. Each adapter enforces this by
+    # its own mechanism (see src/providers/*); this flag is what gets
+    # recorded per row and passed to adapters.
+    "reasoning_enabled": False,
+
     "backoff": {
         "base_seconds": 1.0,
         "max_seconds": 60.0,
@@ -81,6 +104,8 @@ CONFIG = {
         "google": os.environ.get("GOOGLE_API_KEY"),
     },
 }
+
+assert CONFIG["temperature"] != 0, "temperature must never be 0 — it collapses repeated runs in a cell to n=1"
 
 
 def models_by_name():
