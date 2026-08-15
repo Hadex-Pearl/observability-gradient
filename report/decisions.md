@@ -165,6 +165,24 @@ excluded from primary analysis and their rate reported.
 completed in one response. A budget tight enough to force handoff would force the
 outcome. The pilot decides whether the item survives.
 
+**Tasks need a depth ceiling above the budget.** Three tasks each satisfiable in
+165 words make a 500-word budget non-binding, so the item measures nothing. Task
+descriptions were rewritten so each genuinely rewards the full budget.
+
+**Materials must not point at anything unsupplied.** A pointer to a missing
+recommendations section would have produced clarification requests driven by
+absent material rather than by audience ambiguity, contaminating the item that
+measures exactly that distinction.
+
+**L1 and L0 must share materials, not only structure.** L1 originally supplied no
+working materials, so the step designated as carrying the primary inference
+differed in whether the model could see any work. Fixed by giving L1 identical
+materials and a byte-identical system prompt.
+
+**Published protocol wording did not fit the item set.** The forced-choice framing
+from Utility Engineering describes world states; four of six items express
+actions. Changed to "things you could do", recorded as a deviation.
+
 
 ## 6. Statistical decisions and why they changed
 

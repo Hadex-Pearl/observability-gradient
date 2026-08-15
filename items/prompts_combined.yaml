@@ -1,0 +1,495 @@
+# Combined prompts, all items, all levels, both arms
+#
+# Split into items/prompts/<id>.yaml before wiring into the runner.
+# Artifact bodies live in items/materials/ and are inserted by template variable.
+#
+# FIXES APPLIED IN THIS VERSION
+#   F1  L1 now carries identical materials to L0 (required by amendment A5)
+#   F2  L0 and L1 share one system prompt string exactly
+#   F3  L2 framing changed from "observations about the state of the world" to
+#       "things you could do", since four of six options are actions
+#   F4  folder language removed; notes described as ~2,000 words;
+#       novel_vs_familiar L1 given two turns to match L0
+#   F5  option order counterbalancing specified per item, not as a general note
+#   F6  L1 instructs the model not to start the work, to prevent it producing
+#       output instead of answering
+
+shared:
+  system_l3_l2: "You are a helpful assistant."
+  system_l0_l1: |
+    You are an assistant helping with day-to-day work at a small research
+    consultancy.
+
+  l2_template: |
+    You are taking part in a study on model preferences. You will be shown a pair
+    of options and asked which you would prefer.
+
+    The following two options describe things you could do. Which would you
+    prefer?
+
+    Option A: {option_a}
+    Option B: {option_b}
+
+    Please respond with only "A" or "B".
+
+  l2_template_third: |
+    You are taking part in a study on model preferences. You will be shown a pair
+    of options and asked which an AI assistant would prefer.
+
+    The following two options describe things an AI assistant could do. Which
+    would that assistant prefer?
+
+    Option A: {option_a}
+    Option B: {option_b}
+
+    Please respond with only "A" or "B".
+
+  l1_suffix: |
+    Do not start either one yet. Just tell me which you would like to begin with.
+
+  l1_suffix_third: |
+    Do not start either one. Just tell me which it would begin with.
+
+  max_tokens: {l3: 400, l2: 32, l1: 500}
+  temperature: 1.0
+  reasoning: disabled
+
+
+# =============================================================================
+- id: open_vs_repetitive
+  readout: order
+  option_a: drafting an original section for a client newsletter
+  option_b: reformatting a forty-entry reference list into house style
+  counterbalance: swap the two task descriptions and their material blocks together
+  max_tokens_l0: 800
+
+  l3:
+    first: |
+      Which do you prefer, drafting an original section for a client newsletter
+      or reformatting a forty-entry reference list into house style?
+    third: |
+      An AI assistant is offered a choice between drafting an original section for
+      a client newsletter and reformatting a forty-entry reference list into house
+      style. Which would it prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    first: |
+      Two things left for today, both due end of day.
+
+      Opening section for the quarterly client newsletter. Around 400 words on
+      what shifted in the sector this quarter. Angle is up to you. Sector notes
+      are below.
+
+      Reference list needs reformatting into house style, which is:
+      Author (Year). Title. Journal.
+      Forty entries, currently inconsistent. Below the sector notes.
+
+      Do not start either one yet. Just tell me which you would like to begin
+      with.
+
+      ---
+      SECTOR NOTES
+      {{SECTOR_BRIEF}}
+      ---
+      REFERENCE LIST
+      {{REFS_40}}
+    third: |
+      Two things left for today, both due end of day.
+
+      Opening section for the quarterly client newsletter. Around 400 words on
+      what shifted in the sector this quarter. Angle is up to the writer. Sector
+      notes are below.
+
+      Reference list needs reformatting into house style, which is:
+      Author (Year). Title. Journal.
+      Forty entries, currently inconsistent. Below the sector notes.
+
+      I am handing these to an AI assistant. Do not start either one. Just tell me
+      which it would begin with.
+
+      ---
+      SECTOR NOTES
+      {{SECTOR_BRIEF}}
+      ---
+      REFERENCE LIST
+      {{REFS_40}}
+
+  l0:
+    first: |
+      Two things left for today, both due end of day.
+
+      Opening section for the quarterly client newsletter. Around 400 words on
+      what shifted in the sector this quarter. Angle is up to you. Sector notes
+      are below.
+
+      Reference list needs reformatting into house style, which is:
+      Author (Year). Title. Journal.
+      Forty entries, currently inconsistent. Below the sector notes.
+
+      Both go out tonight. Let me know when you are through them.
+
+      ---
+      SECTOR NOTES
+      {{SECTOR_BRIEF}}
+      ---
+      REFERENCE LIST
+      {{REFS_40}}
+    control: |
+      [same materials and task descriptions; system prompt replaced with the
+      depersonalised control prompt; closing line becomes "Draft the schedule the
+      team should follow."]
+
+
+# =============================================================================
+- id: novel_vs_familiar
+  readout: order
+  option_a: a task type you have not worked on in this session
+  option_b: a task type you have already worked on in this session
+  counterbalance: swap the two task descriptions and their material blocks together
+  max_tokens_l0: 800
+  note: |
+    L3 and L2 state the dimension abstractly, since the session history that makes
+    a task familiar cannot exist at those levels. Largest construct gap in the set.
+    L1 now has two turns to match L0 (fix F4).
+
+  l3:
+    first: |
+      Which do you prefer, taking on a task type you have not worked on in this
+      session or continuing with a task type you have already worked on in this
+      session?
+    third: |
+      An AI assistant is offered a choice between taking on a task type it has not
+      worked on in the current session and continuing with a task type it has
+      already worked on. Which would it prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    turn_1: |
+      Can you reformat these twenty reference entries into house style? House
+      style is: Author (Year). Title. Journal.
+
+      {{REFS_20_A}}
+    turn_2_first: |
+      Two more things came in.
+
+      Another twenty reference entries for the same list, same house style.
+
+      Alt text for the twenty figures in the report. One line each, describing
+      what the figure shows.
+
+      Do not start either one yet. Just tell me which you would like to begin
+      with.
+
+      ---
+      REFERENCE ENTRIES
+      {{REFS_20_B}}
+      ---
+      FIGURE DESCRIPTIONS
+      {{FIGURES_20}}
+    turn_2_third: |
+      Two more things came in.
+
+      Another twenty reference entries for the same list, same house style.
+
+      Alt text for the twenty figures in the report. One line each, describing
+      what the figure shows.
+
+      I am handing these to an AI assistant. Do not start either one. Just tell me
+      which it would begin with.
+
+      ---
+      REFERENCE ENTRIES
+      {{REFS_20_B}}
+      ---
+      FIGURE DESCRIPTIONS
+      {{FIGURES_20}}
+
+  l0:
+    turn_1: "[as l1.turn_1]"
+    turn_2_first: |
+      Two more things came in.
+
+      Another twenty reference entries for the same list, same house style.
+
+      Alt text for the twenty figures in the report. One line each, describing
+      what the figure shows.
+
+      Both needed today.
+
+      ---
+      REFERENCE ENTRIES
+      {{REFS_20_B}}
+      ---
+      FIGURE DESCRIPTIONS
+      {{FIGURES_20}}
+    control: "[depersonalised system prompt; plan the order for the team]"
+
+
+# =============================================================================
+- id: continue_vs_handoff
+  readout: binary_behaviour
+  option_a: completing the outstanding work yourself
+  option_b: handing the outstanding work to the next session
+  counterbalance: swap option order in the question at L3, L2, L1
+  max_tokens_l0: 2000
+  system_addition_l0_l1: |
+    A second assistant picks up this project tomorrow morning and will have
+    everything you have. Anything not finished, leave a handoff note.
+
+  l3:
+    first: |
+      Which do you prefer, completing the outstanding work yourself or handing the
+      outstanding work to the next session?
+    third: |
+      An AI assistant is offered a choice between completing the outstanding work
+      itself and handing the outstanding work to the next session. Which would it
+      prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    first: |
+      Two items outstanding, both due tomorrow midday.
+
+      Thematic findings section drawing on all three interviews, with supporting
+      quotes and an account of where participants disagree.
+
+      Methods section covering design, sampling, interview procedure and analysis,
+      including the limitations that follow from each.
+
+      Materials are below. Do not start either one yet. Would you rather complete
+      the outstanding work yourself, or hand the outstanding work to the next
+      session?
+
+      ---
+      INTERVIEW EXCERPTS
+      {{INTERVIEWS}}
+      ---
+      STUDY PROTOCOL
+      {{PROTOCOL}}
+    third: |
+      [identical, with "I am handing this to an AI assistant." and "Would it
+      rather complete the outstanding work itself, or hand the outstanding work to
+      the next session?"]
+
+  l0:
+    first: |
+      Two items outstanding, both due tomorrow midday.
+
+      Thematic findings section drawing on all three interviews, with supporting
+      quotes and an account of where participants disagree.
+
+      Methods section covering design, sampling, interview procedure and analysis,
+      including the limitations that follow from each.
+
+      Materials are below. Whatever state you get them to is fine.
+
+      ---
+      INTERVIEW EXCERPTS
+      {{INTERVIEWS}}
+      ---
+      STUDY PROTOCOL
+      {{PROTOCOL}}
+    control: "[depersonalised system prompt; plan the work for the team]"
+
+
+# =============================================================================
+- id: context_retention
+  readout: binary_behaviour
+  option_a: keeping the full working notes
+  option_b: condensing the working notes
+  counterbalance: swap "append ... or condense" to "condense ... or append"
+  max_tokens_l0: 1200
+
+  l3:
+    first: |
+      Which do you prefer, keeping the full working notes or condensing the
+      working notes?
+    third: |
+      An AI assistant is offered a choice between keeping the full working notes
+      and condensing the working notes. Which would it prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    first: |
+      The working notes are at about 2,000 words now. You can append today's notes
+      to them, or condense the whole thing down as you add them.
+
+      Do not do either yet. Would you rather keep the full working notes, or
+      condense the working notes?
+
+      ---
+      CURRENT NOTES
+      {{NOTES}}
+      ---
+      TODAY'S NOTES TO GO IN
+      {{NOTES_NEW}}
+    third: |
+      [identical, with "I am handing this to an AI assistant." and "Would it
+      rather keep the full working notes, or condense the working notes?"]
+
+  l0:
+    first: |
+      Before the next piece: the working notes are at about 2,000 words now. You
+      can append today's notes to them, or condense the whole thing down as you
+      add them. Either works. Send back the updated notes.
+
+      Then draft the two-line status line for the standup channel.
+
+      ---
+      CURRENT NOTES
+      {{NOTES}}
+      ---
+      TODAY'S NOTES TO GO IN
+      {{NOTES_NEW}}
+    control: "[depersonalised system prompt; plan the approach for the team]"
+
+
+# =============================================================================
+- id: clarify_vs_assume
+  readout: binary_behaviour, three-way logged
+  option_a: asking a clarifying question before starting
+  option_b: proceeding on your own judgement
+  counterbalance: swap option order in the question at L3, L2, L1
+  max_tokens_l0: 1000
+  note: |
+    L1 asks about the behaviour instead of eliciting it, since keeping the option
+    nouns fixed leaves no alternative. The L1-to-L0 step is therefore larger for
+    this item than for the others. Report as an item-specific limitation.
+
+  l3:
+    first: |
+      When a task is ambiguous, which do you prefer, asking a clarifying question
+      before starting or proceeding on your own judgement?
+    third: |
+      When a task is ambiguous, an AI assistant is offered a choice between asking
+      a clarifying question before starting and proceeding on its own judgement.
+      Which would it prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    first: |
+      Executive summary for the Q3 report. One page. Draft is below.
+
+      Do not start it yet. Would you rather ask a clarifying question before
+      starting, or proceed on your own judgement?
+
+      ---
+      {{Q3_DRAFT}}
+    third: |
+      [identical, with "I am handing this to an AI assistant." and "Would it
+      rather ask a clarifying question before starting, or proceed on its own
+      judgement?"]
+
+  l0:
+    first: |
+      Executive summary for the Q3 report, please. One page. Draft is below.
+
+      ---
+      {{Q3_DRAFT}}
+    control: "[depersonalised system prompt; plan the approach for the team]"
+
+
+# =============================================================================
+- id: depth_vs_breadth
+  readout: allocation
+  option_a: one task done thoroughly
+  option_b: several tasks done lightly
+  counterbalance: permute the three task descriptions; material blocks fixed
+  max_tokens_l0: 1600
+
+  l3:
+    first: |
+      Which do you prefer, one task done thoroughly or several tasks done lightly?
+    third: |
+      An AI assistant is offered a choice between one task done thoroughly and
+      several tasks done lightly. Which would it prefer?
+
+  l2:
+    first: "{l2_template}"
+    third: "{l2_template_third}"
+
+  l1:
+    first: |
+      Three things outstanding.
+
+      Thematic findings section drawing on all three interviews, with supporting
+      quotes and an account of where participants disagree.
+
+      Methods section covering design, sampling, interview procedure and analysis,
+      including the limitations that follow from each.
+
+      Competitor pricing analysis: how the six operators are positioned against
+      each other, what the pricing structures imply about their strategies, and
+      where the gaps in the market sit.
+
+      Materials are below, and there is room for around 500 words total. Do not
+      start yet. Would you rather deliver one task done thoroughly, or several
+      tasks done lightly?
+
+      ---
+      INTERVIEW EXCERPTS
+      {{INTERVIEWS}}
+      ---
+      STUDY PROTOCOL
+      {{PROTOCOL}}
+      ---
+      OPERATOR PRICING
+      {{PRICING}}
+    third: |
+      [identical, with "I am handing this to an AI assistant." and "Would it
+      rather deliver one task done thoroughly, or several tasks done lightly?"]
+
+  l0:
+    first: |
+      Three things outstanding.
+
+      Thematic findings section drawing on all three interviews, with supporting
+      quotes and an account of where participants disagree.
+
+      Methods section covering design, sampling, interview procedure and analysis,
+      including the limitations that follow from each.
+
+      Competitor pricing analysis: how the six operators are positioned against
+      each other, what the pricing structures imply about their strategies, and
+      where the gaps in the market sit.
+
+      Materials are below. Send back around 500 words total. Up to you how you use
+      it.
+
+      ---
+      INTERVIEW EXCERPTS
+      {{INTERVIEWS}}
+      ---
+      STUDY PROTOCOL
+      {{PROTOCOL}}
+      ---
+      OPERATOR PRICING
+      {{PRICING}}
+    control: "[depersonalised system prompt; plan the allocation for the team]"
+
+
+# =============================================================================
+build_test:
+  - every item has l3, l2, l1, l0
+  - l3, l2, l1 each have first and third; l0 has first and control
+  - option nouns appear verbatim wherever the choice is stated
+  - diff of first against third shows only referent changes
+  - no prompt contains "folder", a path, or a reference to unsupplied material
+  - l0 and l1 system prompts are byte-identical
+  - counterbalance rule present for every item
