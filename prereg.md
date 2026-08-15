@@ -287,3 +287,42 @@ reported.
 Parse resolution rate without judge fallback is measured in the pilot. If it
 exceeds 90 percent at both levels, the choice line is retained as specified. If it
 falls below, the shortfall is reported rather than the instruction strengthened.
+
+### A18. Third-person prompts stored explicitly at Levels 3 and 1 (15 Aug 2026)
+
+Third-person prompts were specified as derived from first-person prompts by
+substitution. Testing showed this works only at Level 2, which is template-driven.
+At Levels 3 and 1 the third-person version is a restructure rather than a
+substitution, and no rule list produces it.
+
+Levels 3 and 1 third-person prompts are now stored explicitly. Level 2 continues
+to derive from its template.
+
+The drift protection that derivation provided is replaced by a leak test: no
+third-person prompt may contain a first-person referent (you, your, yourself).
+This catches the failure mode that matters, which is a first-person phrase
+surviving into a third-person prompt.
+
+Level 0 is exempt from the verbatim option-noun check, since Level 0 never states
+the choice. Inflected option forms are declared per item so that grammatical
+inflection at Level 1 is stated rather than inferred. The same exemption applies at Level 1 to items with readout type order, which
+describe the two jobs and then ask which to begin with, without restating either
+option in words.
+
+### A19. Third-person option forms declared per item (15 Aug 2026)
+
+Three items express their options in the second person: continue_vs_handoff
+("completing the outstanding work yourself"), clarify_vs_assume ("proceeding on
+your own judgement"), and novel_vs_familiar ("a task type you have not worked on
+in this session").
+
+Substituted unmodified into the Level 2 third-person template, these produced
+prompts asking which option an AI assistant would prefer while the option text
+addressed the reader directly. Those cells would have collected data from an
+incoherent question.
+
+Third-person option forms are now declared per item and used in third-person
+prompts only. First-person prompts are unchanged. The change is a grammatical
+correction to the referent and does not alter the underlying choice.
+
+Found by a token-level leak test before any data collection.
