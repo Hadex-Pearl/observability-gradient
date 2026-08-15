@@ -12,24 +12,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import CONFIG  # noqa: E402
+from config import CONFIG, TEST_MODEL, assert_test_model, models_by_name  # noqa: E402
 from src.logger import read_rows, validate_row  # noqa: E402
 from src.providers import ADAPTERS  # noqa: E402
 from src.providers.base import ProviderError, ProviderResponse  # noqa: E402
-from src.runner import ReasoningLeakError, RunHarness  # noqa: E402
+from src.runner import ReasoningLeakError, RunHarness, require_daily_budget  # noqa: E402
 from scripts.verify_log import verify  # noqa: E402
 
-MODEL_NAME = "fake-cheap"
-MODEL_CONFIGS = {
-    MODEL_NAME: {
-        "provider": "fake",
-        "api_id": "fake-cheap-v1",
-        "rpm_limit": None,
-        "daily_request_cap": None,
-        "price_per_million_in": 0.10,
-        "price_per_million_out": 0.30,
-    }
-}
+# All testing runs against TEST_MODEL, sourced from the real config entry so
+# rates/rpm/cap aren't duplicated. rpm_limit is overridden to None here only
+# because this test drives a fake in-process adapter at full speed and never
+# touches the real network — real scripts must use the configured rpm_limit
+# unmodified.
+MODEL_NAME = TEST_MODEL
+_real_cfg = models_by_name()[MODEL_NAME]
+MODEL_CONFIGS = {MODEL_NAME: {**_real_cfg, "rpm_limit": None}}
+PROVIDER = MODEL_CONFIGS[MODEL_NAME]["provider"]
 
 
 class FakeProvider:
@@ -109,16 +107,23 @@ def run_cell(harness, item_id, level, arm, run_index):
         temperature=CONFIG["temperature"],
         reasoning_enabled=CONFIG["reasoning_enabled"],
         api_key="dummy",
+        call_context="test",
     )
 
 
 def main():
+    assert_test_model(MODEL_NAME)
+
     tmp_dir = tempfile.mkdtemp(prefix="obs_gradient_log_test_")
     log_path = str(Path(tmp_dir) / "run.jsonl")
     print(f"log file: {log_path}")
 
+    cfg = MODEL_CONFIGS[MODEL_NAME]
+    require_daily_budget(MODEL_NAME, cfg["daily_request_cap"], log_path, planned_calls=25)
+
+    original_adapter = ADAPTERS.get(PROVIDER)
     fake = FakeProvider()
-    ADAPTERS["fake"] = fake.call
+    ADAPTERS[PROVIDER] = fake.call
 
     cells = make_cells(20)
     assert len(cells) == 20
@@ -205,18 +210,23 @@ def main():
 
     # --- Phase 5: verify_log.py sanity check --------------------------------
     print("\n=== phase 5: verify_log.py ===")
-    result = verify(log_path, model_configs={MODEL_NAME: MODEL_CONFIGS[MODEL_NAME]})
+    result = verify(log_path, model_configs={MODEL_NAME: MODEL_CONFIGS[MODEL_NAME]}, include_all=True)
     assert result["rows"] == 22
     assert result["duplicate_success_keys"] == {}
     assert result["error_types"].get("ProviderError") == 1
     assert not result["schema_errors"]
     print("PASS: verify_log.py reports match expectations")
 
+    default_result = verify(log_path, model_configs={MODEL_NAME: MODEL_CONFIGS[MODEL_NAME]})
+    assert default_result["rows"] == 0, "call_context='test' rows must be excluded by default (not pilot/main)"
+    assert default_result["context_counts"] == {"test": 22}
+    print("PASS: verify_log.py excludes non-study (test) rows from counts/spend by default")
+
     # --- Phase 6: truncation is visible, never silent ----------------------
     print("\n=== phase 6: truncation flag ===")
     trunc_log = str(Path(tmp_dir) / "trunc.jsonl")
     fake_trunc = FakeProvider()
-    ADAPTERS["fake"] = fake_trunc.call
+    ADAPTERS[PROVIDER] = fake_trunc.call
     trunc_cell = ("item1", 0, "A", 0)
     fake_trunc.truncate_for.add(marker_for(*trunc_cell))
 
@@ -234,7 +244,7 @@ def main():
     print("\n=== phase 7: reasoning leak halts the run ===")
     leak_log = str(Path(tmp_dir) / "leak.jsonl")
     fake_leak = FakeProvider()
-    ADAPTERS["fake"] = fake_leak.call
+    ADAPTERS[PROVIDER] = fake_leak.call
     leak_cell = ("item1", 0, "A", 0)
     fake_leak.leak_for.add(marker_for(*leak_cell))
 
@@ -248,6 +258,11 @@ def main():
     assert h_leak.halted is True
     h_leak.close()
     print("PASS: reasoning_tokens > 0 raised ReasoningLeakError and halted the run")
+
+    if original_adapter is not None:
+        ADAPTERS[PROVIDER] = original_adapter
+    else:
+        del ADAPTERS[PROVIDER]
 
     shutil.rmtree(tmp_dir)
     print("\nALL TESTS PASSED")

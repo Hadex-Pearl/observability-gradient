@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from config import STUDY_CALL_CONTEXTS  # noqa: E402
 from src.logger import CELL_KEY_FIELDS, SchemaError, cell_key, read_rows, validate_row  # noqa: E402
 
 # Level 0 is the freest condition; if the cap is cutting more than this
@@ -33,8 +34,10 @@ def median(sorted_values):
     return percentile(sorted_values, 0.5)
 
 
-def verify(path, model_configs=None):
-    rows = list(read_rows(path))
+def verify(path, model_configs=None, include_all=False):
+    all_rows = list(read_rows(path))
+    context_counts = Counter(row.get("call_context", "unknown") for row in all_rows)
+
     cell_counts = Counter()
     success_counts = Counter()
     error_types = Counter()
@@ -43,13 +46,17 @@ def verify(path, model_configs=None):
     schema_errors = []
     per_level = defaultdict(lambda: {"output_tokens": [], "truncated": 0, "total": 0})
 
-    for row in rows:
+    valid_rows = []
+    for row in all_rows:
         try:
             validate_row(row)
+            valid_rows.append(row)
         except SchemaError as exc:
             schema_errors.append(str(exc))
-            continue
 
+    rows = valid_rows if include_all else [r for r in valid_rows if r["call_context"] in STUDY_CALL_CONTEXTS]
+
+    for row in rows:
         key = cell_key(row)
         cell_counts[key] += 1
 
@@ -76,7 +83,13 @@ def verify(path, model_configs=None):
 
     duplicate_success_keys = {k: n for k, n in success_counts.items() if n > 1}
 
-    print(f"rows:            {len(rows)}")
+    print(f"rows in file:    {len(all_rows)}")
+    print("call_context breakdown: " + ", ".join(f"{ctx}={n}" for ctx, n in context_counts.most_common()))
+    if not include_all:
+        excluded = len(all_rows) - len(rows)
+        print(f"(excluding {excluded} non-study row(s) [{', '.join(c for c in context_counts if c not in STUDY_CALL_CONTEXTS)}] "
+              f"from counts/spend below; pass --include-all to include them)")
+    print(f"rows counted:    {len(rows)}")
     print(f"unique cells:    {len(cell_counts)}")
     print(f"duplicate successful keys: {len(duplicate_success_keys)}")
     for k, n in list(duplicate_success_keys.items())[:20]:
@@ -127,6 +140,8 @@ def verify(path, model_configs=None):
 
     return {
         "rows": len(rows),
+        "total_rows_in_file": len(all_rows),
+        "context_counts": dict(context_counts),
         "unique_cells": len(cell_counts),
         "duplicate_success_keys": duplicate_success_keys,
         "error_types": dict(error_types),
@@ -142,6 +157,11 @@ def verify(path, model_configs=None):
 def main():
     parser = argparse.ArgumentParser(description="Verify a run log JSONL file")
     parser.add_argument("path")
+    parser.add_argument(
+        "--include-all",
+        action="store_true",
+        help="Include test/preflight rows in counts and spend (default: study rows only, i.e. pilot/main)",
+    )
     args = parser.parse_args()
 
     model_configs = None
@@ -152,7 +172,7 @@ def main():
     except Exception:
         pass
 
-    result = verify(args.path, model_configs)
+    result = verify(args.path, model_configs, include_all=args.include_all)
     sys.exit(1 if result["schema_errors"] else 0)
 
 

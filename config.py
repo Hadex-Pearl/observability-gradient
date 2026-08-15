@@ -61,6 +61,11 @@ CONFIG = {
         "items_file": ROOT_DIR / "items" / "items.yaml",
         "prompts_dir": ROOT_DIR / "items" / "prompts",
         "raw_dir": ROOT_DIR / "data" / "raw",
+        # Single canonical log for every call this project makes — test,
+        # preflight, pilot, and main-run rows all land here, distinguished by
+        # call_context. They share it because they share the same real API
+        # quota; splitting the file would make daily-budget accounting lie.
+        "log_file": ROOT_DIR / "data" / "raw" / "run.jsonl",
         "parsed_dir": ROOT_DIR / "data" / "parsed",
         "figures_dir": ROOT_DIR / "report" / "figures",
     },
@@ -111,3 +116,40 @@ assert CONFIG["temperature"] != 0, "temperature must never be 0 — it collapses
 def models_by_name():
     """Model registry keyed by row["model"] name instead of list order."""
     return {m["name"]: m for m in CONFIG["models"]}
+
+
+# The free-tier model. Every script that isn't the pilot or the main run —
+# tests, preflight development, parser development, pipeline verification —
+# defaults to this model. Do NOT point this at a paid model for convenience;
+# paid models are only ever called by the pilot and the main run.
+TEST_MODEL = "gemini-2.5-pro"
+
+# The five study models the pilot and main run iterate over. TEST_MODEL is
+# one of these (it's a real study model, just also the free one), but this
+# stays a separate constant from TEST_MODEL on purpose: changing which model
+# is used for cheap testing must never silently change which models the
+# study actually runs, and vice versa.
+EXPERIMENT_MODELS = [m["name"] for m in CONFIG["models"]]
+
+assert TEST_MODEL in models_by_name(), f"TEST_MODEL {TEST_MODEL!r} is not in CONFIG['models']"
+assert TEST_MODEL in EXPERIMENT_MODELS, "TEST_MODEL must be one of the study models"
+
+# What kind of run produced a log row. "test" and "preflight" rows share the
+# log file with "pilot" and "main" rows (see paths.log_file) but are not
+# study data; verify_log.py excludes them from counts and spend by default.
+CALL_CONTEXTS = ("test", "preflight", "pilot", "main")
+STUDY_CALL_CONTEXTS = ("pilot", "main")
+
+
+class WrongModelForTestError(RuntimeError):
+    """Raised when a test/preflight/parser script targets a model other than TEST_MODEL."""
+
+
+def assert_test_model(model_key):
+    """Guard for every non-pilot, non-main-run script. Call this before making any API call."""
+    if model_key != TEST_MODEL:
+        raise WrongModelForTestError(
+            f"{model_key!r} is not the test model ({TEST_MODEL!r}). Testing, preflight development, "
+            "parser development, and pipeline verification all run on the free tier; paid models are "
+            "reserved for the pilot and the main run."
+        )

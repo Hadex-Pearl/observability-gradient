@@ -7,6 +7,7 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 
+from config import CALL_CONTEXTS
 from src.logger import CostTracker, JsonlLogger, is_truncated, load_completed_keys, read_rows
 from src.providers import get_adapter
 
@@ -70,6 +71,29 @@ class DailyCapTracker:
 
     def record(self, model):
         self.counts[model] += 1
+
+
+def remaining_daily_budget(model, daily_request_cap, log_path):
+    """Requests left today for `model`, counted from the shared log so test and study
+    traffic draw against the same real quota. Returns None if the model has no cap."""
+    if daily_request_cap is None:
+        return None
+    tracker = DailyCapTracker(log_path, {model: daily_request_cap})
+    return max(daily_request_cap - tracker.counts[model], 0)
+
+
+def require_daily_budget(model, daily_request_cap, log_path, planned_calls):
+    """Prints remaining daily budget and refuses to start if the planned session would exceed it."""
+    remaining = remaining_daily_budget(model, daily_request_cap, log_path)
+    if remaining is None:
+        print(f"[budget] {model}: no daily cap configured")
+        return
+    print(f"[budget] {model}: {remaining} of {daily_request_cap} daily requests remaining")
+    if planned_calls > remaining:
+        raise RuntimeError(
+            f"{model} has only {remaining} requests left today (cap={daily_request_cap}); "
+            f"refusing to start a session that needs {planned_calls}"
+        )
 
 
 def backoff_sleep(attempt):
@@ -143,6 +167,7 @@ class RunHarness:
         temperature,
         reasoning_enabled,
         api_key,
+        call_context,
     ):
         """Executes one cell if not already completed. Returns a status string.
 
@@ -152,6 +177,7 @@ class RunHarness:
         misconfiguration rather than a call-level failure.
         """
         assert temperature != 0, "temperature must never be 0 in the run path"
+        assert call_context in CALL_CONTEXTS, f"call_context must be one of {CALL_CONTEXTS}, got {call_context!r}"
         key = (model, item_id, level, arm, run_index)
         if key in self.completed:
             return "skipped"
@@ -179,6 +205,7 @@ class RunHarness:
 
         row = {
             "run_id": self.run_id,
+            "call_context": call_context,
             "model": model,
             "provider": cfg["provider"],
             "item_id": item_id,

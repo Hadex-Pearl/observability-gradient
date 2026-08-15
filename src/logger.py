@@ -6,6 +6,7 @@ import threading
 
 SCHEMA_FIELDS = [
     "run_id",
+    "call_context",
     "model",
     "provider",
     "item_id",
