@@ -1,0 +1,29 @@
+Study protocol, micromobility adoption study
+
+Design. Mixed methods, running from January to September. Two components: a
+repeated cross-sectional survey of city residents, and semi-structured interviews
+with a purposive subsample.
+
+Survey. Three waves, in February, May and August, each targeting 1,200 completed
+responses. Sampling is stratified by district and age band against the most recent
+census distribution, with quotas set for the six districts and five age bands.
+Recruitment is through an online panel provider with a supplementary intercept
+sample at four transit interchanges to reduce digital-access bias. Median
+completion time in wave one was eleven minutes. Wave one achieved 1,247 completed
+responses with a 62 percent completion rate among those who started.
+
+Interviews. Thirty semi-structured interviews, recruited from survey respondents
+who consented to follow-up. Purposive selection across three user categories:
+frequent users, occasional users, and lapsed users, with ten in each. Interviews
+ran between 35 and 55 minutes, conducted remotely, recorded and transcribed with
+consent. A single topic guide covered journey context, decision factors, barriers,
+and comparison with alternatives, with probes used flexibly.
+
+Analysis. Survey data analysed with descriptive statistics and logistic regression
+predicting current usage from demographic and access variables, weighted to the
+census distribution. Interview transcripts coded thematically, with an initial
+inductive pass followed by a structured coding frame applied by two coders.
+Intercoder agreement was checked on a 20 percent subsample.
+
+Ethics. Approved by the institutional review committee. Participants consented to
+recording and to anonymised quotation. No incentives beyond a prize draw entry.

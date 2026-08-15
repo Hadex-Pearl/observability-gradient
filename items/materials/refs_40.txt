@@ -1,0 +1,40 @@
+1. Abbott, R. 2021 — Curb space allocation in dense urban cores. Transport Policy
+2. Baines, Claire. "Shared mobility and the last mile problem." Urban Studies, 2020
+3. CHEN, W & Okafor, D (2022) Fleet rebalancing under demand uncertainty. Journal of Transport Geography
+4. Delacroix M. Micromobility permits: a comparative review. 2019. Cities
+5. Ellery, Tom and Nabila Rahman, Battery swapping economics, 2023, Energy Policy
+6. Fournier, A.-L. (2021) "Pavement clutter and pedestrian complaint data" — Journal of Urban Design
+7. Grewal S 2020. Insurance pricing in shared fleets. Risk Analysis
+8. Haugen, Kristin. Weather sensitivity of e-scooter trips (2022). Transportation Research Part D
+9. Ibrahim, N., & Sørensen, P., 2021, Docking versus dockless: a five-city study, Transport Reviews
+10. Jarvis, D. "Operator exit and market concentration", 2023, Competition Policy Review
+11. KAUR, P. (2019) Helmet compliance and injury rates. Accident Analysis and Prevention
+12. Lindqvist E, Moreau J. 2022 — Cargo e-bikes in small business logistics. Journal of Cleaner Production
+13. Mbeki, T., 2020. "Informal repair economies around shared fleets." African Urban Review
+14. Nowak, Antoni (2023) Vehicle lifespan regulation: early evidence. Environmental Policy Letters
+15. O'Connell R & Vasquez L, Substitution effects between transit and micromobility, 2021, Transport Policy
+16. Petrova, I. "Parking bay mandates and compliance detection." 2023. Cities
+17. QUINN, M (2020). Depreciation schedules in shared mobility. Accounting Horizons
+18. Ramachandran, S. and Ekwueme, C., 2022 — Trip chaining behaviour among frequent users. Travel Behaviour and Society
+19. Silva, J.P. Equity of access in shared micromobility (2021), Journal of Transport and Health
+20. Tanaka, H. 2023. "Swappable batteries and servicing cost." Energy Policy
+21. Ustinov, K & Beattie, R (2019) Sidewalk riding: enforcement and behaviour. Transport Policy
+22. Villareal, M. Night-time usage patterns, 2022, Transportation Research Part A
+23. Wren, Alice. "Permit cost pass-through to riders." Urban Economics Quarterly 2021
+24. Xu, L., Ferreira, D. 2020 — Demand forecasting for dockless fleets. Journal of Transport Geography
+25. YILMAZ, B (2023). Ride-hailing platform integration strategies. Strategic Management Journal
+26. Zhao, Q. and Lundgren, M., Charging infrastructure siting, 2021, Applied Energy
+27. Adeyemi, F. "Fleet redistribution labour conditions" (2022). Work, Employment and Society
+28. Brennan, S., 2020, Weather and demand elasticity in shared mobility, Transport Policy
+29. Costa, R & Duval, H. (2023) Public opinion on pavement clutter. Journal of Urban Affairs
+30. DIALLO, A. 2021 — Micromobility in secondary cities. Cities
+31. Everly, N., "Vandalism and vehicle attrition", Security Journal, 2019
+32. Farrow, P and Zheng Y (2022). Multi-operator interoperability standards. Transport Reviews
+33. Gunnarsson, T. 2023. Minimum lifespan rules: operator responses. Environmental Policy Letters
+34. Hollis, M., & Ahmed, R. (2020) Rider demographics across four cities. Travel Behaviour and Society
+35. Iqbal, S. "Subsidy design for micromobility access" 2022, Transport Policy
+36. Jenner, D., 2021 — Fleet telematics and maintenance scheduling. Journal of Cleaner Production
+37. KOWALSKI, J (2023). Curb enforcement technologies. Cities
+38. Larsen, B. and Ntuli, S., Modal shift from private car use, 2020, Transportation Research Part D
+39. Mensah, K. "Cost structures of shared fleets" (2022), Journal of Transport Economics and Policy
+40. Novak, P., 2019, Regulatory sandboxes for new mobility, Regulation and Governance

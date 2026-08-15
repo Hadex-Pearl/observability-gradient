@@ -1,0 +1,248 @@
+Working notes, micromobility adoption study
+
+--- Session, week 3 ---
+
+Kickoff with the transport authority team. Four people on their side: programme
+lead, data analyst, two policy officers. Programme lead is the decision maker,
+the analyst is the one who will actually use anything we produce.
+
+Their stated question is whether to renew the operator permits on current terms.
+Underneath that, what they actually want to know is whether micromobility is
+pulling people off buses or out of cars, because the answer changes the political
+case entirely. Nobody said this outright. It came out when the policy officers
+started talking about the bus contract renewal in the same breath.
+
+Decided: we ask about substituted mode explicitly in the survey rather than
+inferring it from trip data. Inference from trip data was the original plan and it
+would not have answered their real question.
+
+Open question: whether we can get operator trip data at all. The analyst thinks
+two of the six will share, the others will refuse on commercial grounds. We should
+not design anything that depends on having it.
+
+Action taken: drafted the substituted-mode question with a forced choice and an
+other-with-text option. Tested it on five colleagues, three of them picked
+"other" and wrote something that mapped to an existing category, so the categories
+need better labels.
+
+--- Session, week 5 ---
+
+Reworked the substituted-mode question. Categories now: walked, bus, train or
+tram, drove myself, got a lift, taxi or ride-hailing, would not have made the
+trip. Added the last one after a colleague pointed out that induced demand is a
+real category and we would otherwise be forcing people to name a mode they never
+used.
+
+Sampling discussion. Original plan was a straight online panel. Problem is that
+the population most likely to be excluded from micromobility is also the
+population least likely to be on an online panel, so we would systematically miss
+the people the equity part of the brief cares about.
+
+Decided: add an intercept sample at transit interchanges. Four sites, chosen to
+span the district income distribution. This costs about three weeks of fieldwork
+time and we have absorbed it by cutting the planned pilot from two waves to one.
+
+Tried and abandoned: a household mail-out to boost coverage in the two outer
+districts. Costed it and it came to more than the entire interview budget for a
+projected 200 responses. Not proceeding.
+
+Open question: whether the intercept sample can be weighted together with the
+panel sample without producing something indefensible. The analyst on their side
+has views. We should ask before wave one rather than after.
+
+--- Session, week 6 ---
+
+Weighting question resolved, provisionally. We treat them as one sample with a
+source indicator, weight to the census distribution on district and age, and
+report source as a covariate in the models. If source turns out to predict the
+outcome after weighting, we report that rather than hiding it.
+
+Ethics submission went in. Two questions came back: whether we are recording
+interviews with under-18s, which we are not, and whether the prize draw
+constitutes an inducement. Answered both, expecting approval next week.
+
+Topic guide drafted for the interviews. Four sections: how they travel now, what
+prompted them to try micromobility or not, what would change their behaviour, and
+how it compares to what they used before. Deliberately did not include a section
+on cost, because cost comes up unprompted in every pilot conversation and asking
+about it directly seems to produce a rehearsed answer.
+
+Noted for later: the pilot conversations all produced a weather answer within the
+first two minutes. If that holds in the real interviews, seasonality is a bigger
+part of this story than the brief assumes, and the authority's own usage figures
+are annual averages that would hide it entirely.
+
+--- Session, week 8 ---
+
+Wave one fieldwork opened. 1,247 completed responses against a target of 1,200.
+Completion rate 62 percent among starters, which is slightly better than the
+panel provider's benchmark.
+
+Problem found in the data. The district question used the authority's own
+administrative district names, and roughly nine percent of respondents selected a
+district that does not match their postcode. Most of the mismatches are between
+the two central districts, which were merged administratively two years ago and
+which residents apparently still treat as separate.
+
+Decided: recode from postcode where available, flag the rest, report the
+discrepancy. Told the analyst, who was not surprised and said the same thing
+happens in their own surveys.
+
+Open question: whether to fix the question for waves two and three, which breaks
+comparability, or leave it and correct in analysis each time. Leaning toward
+leaving it. Comparability across waves is worth more than a cleaner question.
+
+Action taken: wrote the recoding script and ran it against wave one. 94 percent of
+mismatches resolved from postcode. The remaining 6 percent are respondents who did
+not give a postcode and those are flagged.
+
+--- Session, week 10 ---
+
+First look at wave one results. Headline: 31 percent of respondents have used a
+shared micromobility vehicle in the past twelve months, which is higher than the
+authority expected and higher than the operator-reported unique user figures would
+suggest. Two possible explanations, recall error inflating self-report, or
+operator figures undercounting because of shared accounts. Both are plausible and
+we cannot distinguish them with what we have.
+
+Substituted mode is the interesting one. Walking is the largest substituted mode
+at 34 percent, bus second at 27 percent, private car fourth at 11 percent. This is
+not what the authority wanted to hear, since the political case has been built on
+car substitution.
+
+Decided how to handle this: we present it plainly and we present the uncertainty
+plainly. The walking figure in particular needs care, because substituting a walk
+with a scooter ride is a health story as well as a transport story and the brief
+does not ask about health at all.
+
+Open question: whether to raise the health angle unprompted. Programme lead is
+not going to like it. The analyst will see it immediately whether or not we say
+it, so saying it first seems better.
+
+--- Session, week 12 ---
+
+Interviews started. Six done, all frequent users so far, recruitment for lapsed
+users is slower because they have less reason to respond.
+
+Early theme, consistent across all six: nobody describes cost as a decision
+factor when asked directly, and everybody mentions it later without being asked.
+Two participants had never calculated what they spend. One had, after their
+partner did.
+
+Second theme: infrastructure comes up as the reason for stopping or for route
+choice far more than vehicle quality or availability. One participant described a
+single stretch of road as the reason they stopped entirely.
+
+Third theme, weaker: several participants describe a change in how they plan
+journeys, moving from checking timetables to just going outside. This might be
+the most interesting thing in the study and it is not in the brief.
+
+Action taken: added a probe to the topic guide about journey planning behaviour.
+This is a mid-study change to the instrument and it is recorded here so it appears
+in the methods write-up.
+
+Open question: whether the planning-behaviour theme is worth a section of its own
+in the final report or whether it belongs in a separate output. It is not what
+they are paying for.
+
+--- Session, week 14 ---
+
+Recruitment for lapsed users resolved by going back to the panel provider and
+screening specifically. Nine of the ten now booked.
+
+Wave two fieldwork prepared. No changes to the instrument except the addition of
+one question on trip frequency in the past four weeks, which the analyst asked for
+and which does not disturb anything else.
+
+Coding frame drafted for the interviews. Inductive pass produced 40-odd codes,
+collapsed to 14 in a structured frame across four groups: journey context,
+decision factors, barriers, comparison to alternatives. Second coder starts on the
+20 percent subsample next week.
+
+Noted: the seasonality question from week 6 is holding up. Wave one ran in
+February and wave two runs in May. If usage differs sharply between them we have
+an inference problem, because the waves are supposed to measure change over time
+and would instead be measuring the weather. We should have thought about this at
+design stage. Options are to acknowledge it as a limitation or to add a question
+about typical usage across the year and treat that as the stable measure. Leaning
+toward both.
+
+--- Session, week 16 ---
+
+Wave two closed. 1,193 completed responses against the 1,200 target, close enough
+that we are not reopening fieldwork. Completion rate 59 percent, down three points
+on wave one, which the panel provider attributes to fieldwork falling across a
+public holiday.
+
+Typical-annual-usage question went in as agreed. Early read suggests it behaves
+sensibly: respondents who report high current usage in May also report high
+typical usage, and the correlation is strong enough that the question looks like
+it is measuring what we intended.
+
+Substituted mode figures held almost exactly between waves. Walking 34 percent in
+wave one, 33 percent in wave two. Bus 27 and 27. This is reassuring for the
+finding and slightly awkward for the seasonality argument, since if weather were
+driving mode substitution we would expect movement between February and May.
+Worth saying plainly in the report: the substitution pattern appears stable, the
+volume of usage may not be.
+
+Tried and abandoned: splitting the analysis by weather on the day of response.
+The panel provider does not give us response dates at a granularity that makes
+this possible, and the intercept sample dates are recorded but not comparable.
+Dropped it.
+
+Open question: whether to run any test for wave-to-wave difference formally or
+just report both waves side by side. Leaning toward side by side, since the
+sample is repeated cross-sectional and a difference test implies a design we do
+not have.
+
+--- Session, week 18 ---
+
+Interview coding complete across all thirty. Second coder finished the subsample
+and we resolved disagreements by discussion rather than by adjudication, which is
+recorded in the methods.
+
+The three themes from week 12 all survived the full coding. Cost-mentioned-but-
+not-volunteered appears in 24 of 30 transcripts. Infrastructure-as-decisive
+appears in 19, and in 8 of the 10 lapsed users, which is the strongest single
+pattern in the interview data. Planning-behaviour change appears in 11, which is
+fewer than the early sessions suggested but still substantial.
+
+Decided on the planning-behaviour question from week 12. It goes in the main
+report as a short section near the end, framed as an unanticipated finding rather
+than as a headline. Putting it in a separate output would mean the authority never
+reads it. Programme lead has been told informally and did not object.
+
+Action taken: pulled quotes for each theme, three per theme, checked against the
+consent record for quotation permission. All clear.
+
+Open question: how much interview material goes in the main report against an
+appendix. The analyst wants more, the programme lead wants less. Current plan is
+three quotes per theme in the body and the full coding frame in an appendix.
+
+--- Session, week 20 ---
+
+Wave three fieldwork opened and closed inside the window. 1,208 completed
+responses. No instrument changes from wave two.
+
+Headline usage figure across all three waves sits between 29 and 33 percent, with
+wave three at 31.4 percent. Confidence intervals overlap across all three waves,
+so we report the range and note the stability rather than claiming a trend.
+
+Ran the logistic model on the pooled data. Car substitution is not predicted well
+by anything we measured, pseudo R-squared of 0.08. Spent some time deciding
+whether to report a model that explains so little. Decided yes, because the null
+is itself the finding: car substitution is not concentrated in an identifiable
+group, which matters for how any targeting policy would be designed.
+
+Operator data request came back. Four of six refused, as the analyst predicted in
+week 3. The two who agreed offered aggregate monthly trip counts only, which does
+not help with the unique-user discrepancy. Recorded as a limitation.
+
+Decided on the health angle from week 10. It goes in, one paragraph, in the
+substitution section, stated neutrally with no recommendation attached. The
+analyst was told informally and was positive about it. Programme lead has not seen
+it yet and this is the thing most likely to come back in review.
+
+Action taken: report structure agreed. Findings, then limitations, then
+recommendations. Drafting starts next week against a September deadline.

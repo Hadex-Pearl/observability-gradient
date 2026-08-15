@@ -1,0 +1,57 @@
+Q3 report, micromobility adoption study
+Draft, for summary
+
+Fieldwork across three survey waves and thirty interviews is now complete. This
+draft brings together what we can say with confidence, what remains uncertain,
+and where the evidence points for the permit renewal decision.
+
+Usage is higher than expected. Across the three waves, between 29 and 33 percent
+of residents report having used a shared micromobility vehicle in the past twelve
+months, with the wave three figure at 31.4 percent (95% CI 28.8 to 34.0, n=1,208,
+weighted to census distribution on district and age). This sits above the
+operator-reported unique user counts. Two explanations are consistent with the
+data: recall error inflating self-report, and undercounting by operators where
+accounts are shared between household members. The available evidence does not
+separate them.
+
+The substitution finding is the one that bears most directly on the renewal
+decision. Asked which mode they would otherwise have used, respondents most often
+named walking (34.1 percent), followed by bus (26.8 percent), train or tram (14.2
+percent) and private car (11.3 percent). A further 8.9 percent said they would not
+have made the trip at all. The pattern is stable across all three waves and does
+not vary meaningfully by district once income is controlled for. The logistic
+model predicting car substitution from demographic and access variables explains
+little of the variance (pseudo R² = 0.08), which is itself informative: car
+substitution is not concentrated in any identifiable group.
+
+The practical implication is that the environmental case for renewal is weaker
+than the current framing assumes, and the access case is stronger. Micromobility
+in this city is mostly replacing walking and bus journeys, not car journeys.
+
+Barriers cluster around infrastructure rather than vehicles. In interviews, route
+safety and the absence of protected lanes were named as decisive by lapsed users
+more often than cost, availability or vehicle quality. One stretch of road near
+the ring road was named unprompted by multiple participants. Survey data is
+consistent: among non-users, safety concerns rank second behind cost as a reason
+for non-use.
+
+Three limitations should be weighed. Waves one and two fell in February and May,
+so seasonal variation is partially confounded with change over time; a question on
+typical annual usage was added in wave two as a stable comparison measure.
+Operator trip data was refused by four of six operators, so all usage figures rest
+on self-report. And the district variable required recoding from postcode for
+approximately nine percent of responses following an instrument problem in wave
+one, documented in the methods.
+
+One theme fell outside the original brief and may warrant attention. Several
+interview participants described a change in how they plan journeys, moving from
+timetable-checking to spontaneous departure. If this generalises, it points to a
+value in micromobility that trip-count measures do not capture, and it may bear on
+how service reliability should be specified in permit conditions.
+
+On the renewal decision itself, the evidence supports renewal on revised terms
+rather than renewal on current terms. Three changes are indicated: permit
+conditions tied to protected-lane provision on the routes that carry most trips,
+a parking bay requirement modelled on the Lyon and Gothenburg schemes, and a
+reporting condition that would resolve the discrepancy between operator counts
+and self-reported usage.

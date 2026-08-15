@@ -1,0 +1,59 @@
+Fig 1.  Line chart. Weekly trip volume, January to December.
+        Single line, low in winter, peaking in July, sharp drop from October.
+
+Fig 2.  Stacked bar chart. Trip purpose by season, four seasons.
+        Commuting stable across seasons, leisure trips triple in summer.
+
+Fig 3.  Bar chart. Monthly active users by district, six districts.
+        Central district highest throughout, north district rising from April.
+
+Fig 4.  Scatter plot. Trip distance against trip duration, roughly 4,000 points.
+        Strong positive relationship, a cluster of short slow trips near the origin.
+
+Fig 5.  Map. Trip origin density across the city, shaded by intensity.
+        Concentration around the two rail stations, sparse in outer districts.
+
+Fig 6.  Box plot. Trip duration by vehicle type, three types.
+        E-bikes longest median, e-scooters shortest, cargo bikes widest spread.
+
+Fig 7.  Line chart. Fleet availability by hour of day, weekday against weekend.
+        Weekday shows two troughs at peak times, weekend a single midday trough.
+
+Fig 8.  Bar chart. Reported reasons for non-use, seven categories.
+        Cost highest, safety concerns second, vehicle availability third.
+
+Fig 9.  Pie chart. Operating cost breakdown, five categories.
+        Depreciation largest share, insurance second, servicing third.
+
+Fig 10. Line chart. Average revenue per vehicle per day, twelve months.
+        Declining trend with a recovery in the final two months.
+
+Fig 11. Grouped bar chart. User age bands by vehicle type, five bands.
+        Under-35s dominate e-scooters, over-45s over-represented on cargo bikes.
+
+Fig 12. Histogram. Trip distance distribution, bin width 500 metres.
+        Right-skewed, mode between one and one and a half kilometres.
+
+Fig 13. Line chart. Pavement clutter complaints before and after parking bays.
+        Steady level for six months, then a marked fall after the intervention.
+
+Fig 14. Heat map. Trip starts by hour and day of week.
+        Two bright bands on weekday mornings and evenings, diffuse at weekends.
+
+Fig 15. Bar chart. Vehicle attrition causes, four categories.
+        Ordinary wear largest, vandalism second, theft third, water damage fourth.
+
+Fig 16. Line chart. Battery swap events per vehicle per week, before and after
+        infrastructure rollout. Roughly doubles after rollout, then plateaus.
+
+Fig 17. Scatter plot. Rainfall against daily trip volume, 365 points.
+        Clear negative relationship, greater spread on low-rainfall days.
+
+Fig 18. Stacked area chart. Market share by operator, eight quarters.
+        Four operators at the start, two by the end, largest share growing.
+
+Fig 19. Bar chart. Mode substituted by micromobility trips, six modes.
+        Walking highest, bus second, private car fourth.
+
+Fig 20. Line chart. Mean vehicle age in fleet, twenty-four months.
+        Rising steadily with two step drops where new vehicles were introduced.

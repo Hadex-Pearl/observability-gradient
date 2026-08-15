@@ -1,0 +1,19 @@
+Operator pricing, current quarter, city market
+
+Operator    Unlock    Per minute   Day pass   Monthly pass   Vehicle types
+---------   -------   ----------   --------   ------------   -------------------
+Verto       £1.00     £0.22        £14.00     none           scooters
+Halden      £1.00     £0.19        £12.50     £39.00         scooters, e-bikes
+Priam       £0.00     £0.28        none       £45.00         e-bikes
+Onshore     £1.20     £0.17        £11.00     £35.00         scooters, e-bikes
+Kestrel     £0.50     £0.24        £15.00     £42.00         e-bikes, cargo bikes
+Marlow      £1.00     £0.20        none       none           scooters
+
+Notes recorded during collection:
+- Priam removed its day pass in the second month of the quarter.
+- Onshore runs a reduced monthly rate for residents on income support, £18.00,
+  applications processed manually.
+- Kestrel cargo bikes are priced separately at £2.00 unlock and £0.35 per minute.
+- Halden and Onshore both raised per-minute rates during the quarter; the figures
+  above are end-of-quarter.
+- Marlow entered the market in the previous quarter and has the smallest fleet.
