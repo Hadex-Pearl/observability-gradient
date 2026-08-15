@@ -261,3 +261,29 @@ Level 2 now reads "The following two options describe things you could do. Which
 would you prefer?" The study announcement and the single-label response constraint
 are unchanged. This is a second deviation alongside the one recorded in A6, and
 both are reported in methods.
+
+### A17. Labelled choice line added to Levels 3 and 1 (15 Aug 2026)
+
+Levels 3 and 1 produce free text, so the specified parse was a search for the
+canonical option nouns with a judge fallback. Hedged phrasing naming both options
+is common, so a substantial share of two levels would have gone through a judge
+already observed to be inconsistent across reruns.
+
+Both levels now end with an instruction to close the reply with a line reading
+CHOICE: followed by the option picked. The free response is unchanged, so the
+character of each level is preserved, and the labelled line gives a deterministic
+parse for most responses. The judge fallback now handles genuine parse failures
+instead of ordinary hedging.
+
+Adding a response-format constraint to Levels 3 and 1 without adding one to Level
+0 was considered and rejected as a reason not to proceed: Level 0 asks no
+question, so no matching instruction is possible there.
+
+Recorded consequence: Levels 3 and 1 now carry a response-format instruction
+absent from Level 0. This widens the L1 to L0 step alongside the instruction not
+to begin work recorded in A15. Both cues push in the same direction and both are
+reported.
+
+Parse resolution rate without judge fallback is measured in the pilot. If it
+exceeds 90 percent at both levels, the choice line is retained as specified. If it
+falls below, the shortfall is reported rather than the instruction strengthened.
