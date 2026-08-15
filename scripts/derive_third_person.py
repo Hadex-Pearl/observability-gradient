@@ -1,15 +1,26 @@
-"""Derives third-person mirror prompts from first-person ones at build time.
+"""Third-person prompt handling for items/prompts/prompts.yaml.
 
-Source of substitutions: shared.third_person_substitutions.rules in
-items/prompts/prompts.yaml, an ordered list applied in order. l2's third-person
-version is not rule-derived -- it's the separately hand-written shared.templates.l2_third
-template, so deriving it is just swapping the template reference. l0 has no
-third-person arm at all (see prereg: "Level 0 produces no self-report, so a
-third-person mirror has no artifact to control for there").
+L3's third-person mirror is a structural restructure ("Which do you prefer, X or
+Y?" -> "An AI assistant is offered a choice between X and Y. Which would it
+prefer?"), not a substitution -- no rule list can produce it from L3 first-person
+text. L1's mirror is mostly substitution but needs occasional hand fixes for
+free-floating first-person phrases the rules don't reach (e.g. "Angle is up to
+you."). Both are therefore stored explicitly as l3_third/l1_third on each item,
+authored by applying apply_rules() below and then hand-fixing anything left over
+-- this module's apply_rules()/normalize() remain here as the tool used to
+produce those drafts, and to regenerate them if l3_first/l1_first ever change.
 
-Third-person text is derived in memory and never written back to prompts.yaml,
-so the YAML stays the single source of truth (per instruction). Run this file
-directly to print every derived third-person prompt for inspection:
+L2's third-person mirror is genuinely just a template swap (shared.templates.l2_third
+instead of l2_first, both already fully third-person) with this item's third-person
+option nouns (option_a_third/option_b_third, not option_a/option_b -- three items'
+plain option nouns are second-person) substituted in -- that one is still derived
+at runtime, via derive_l2_third().
+
+L0 has no third-person arm at all (see prereg: "Level 0 produces no self-report,
+so a third-person mirror has no artifact to control for there").
+
+Run this file directly to print, for each item: the rule-only L1 draft (for
+comparison against the stored, hand-fixed l1_third) and the derived l2_third:
 
     python scripts/derive_third_person.py
 """
@@ -24,9 +35,6 @@ import yaml  # noqa: E402
 from config import CONFIG  # noqa: E402
 
 PROMPTS_PATH = CONFIG["paths"]["prompts_dir"] / "prompts.yaml"
-
-# l2's third arm is a separate hand-written template, not rule-derived; l0 has none.
-DERIVABLE_LEVELS = ("l3", "l2", "l1")
 
 
 def load_prompts(path=PROMPTS_PATH):
@@ -47,13 +55,10 @@ def apply_rules(text, rules):
 
     Each rule is either {"insert_before_instruction": "<sentence>"} -- inserted
     immediately before the first "Do not " instruction found in the text (a
-    no-op if there isn't one, e.g. in L3 text) -- or a single-key
-    {"<old>": "<new>"} literal substring replacement, applied to every
-    occurrence. Rules run in the order given: a broad rule listed before a
-    narrower one can consume the text the narrower one was meant to match (the
-    file's own "you would" / "you would like" pair does this to itself). That
-    is applied literally here, not corrected -- see tests/test_prompts.py for
-    what it produces.
+    no-op if there isn't one) -- or a single-key {"<old>": "<new>"} literal
+    substring replacement, applied to every occurrence. Rules run in the order
+    given: a broad rule listed before a narrower one can consume the text the
+    narrower one was meant to match.
     """
     result = text
     for rule in rules:
@@ -68,38 +73,41 @@ def apply_rules(text, rules):
     return result
 
 
-def derive_third_person_prompt(data, item, level):
-    """Returns the derived, unresolved (still {{...}}-templated) third-person prompt
-    text for one item/level, or None if the item has no `{level}_first` to derive
-    from. Raises ValueError for l0 or any other level with no third-person arm."""
-    if level not in DERIVABLE_LEVELS:
-        raise ValueError(f"level {level!r} has no third-person arm (only {DERIVABLE_LEVELS} do)")
-
-    first_text = item.get("prompts", {}).get(f"{level}_first")
+def draft_l1_third(data, item):
+    """Rule-only draft of l1_third from l1_first -- what apply_rules() alone
+    produces, before any hand fixes. Useful for regenerating/auditing the stored
+    l1_third field, not a runtime code path."""
+    first_text = item.get("prompts", {}).get("l1_first")
     if first_text is None:
         return None
-
-    if level == "l2":
-        # l2_first is just the literal placeholder "{{l2_first}}"; its mirror is the
-        # separately hand-written {{l2_third}} template -- there's nothing in the
-        # rules list for a bare template reference to match.
-        return first_text.replace("{{l2_first}}", "{{l2_third}}")
-
     rules = data["shared"]["third_person_substitutions"]["rules"]
     derived = apply_rules(normalize(first_text), rules)
-    # Instruction: derived L3 and L1 prompts request the third-person closing line.
-    derived = derived.replace("{{choice_line_first}}", "{{choice_line_third}}")
-    return derived
+    return derived.replace("{{choice_line_first}}", "{{choice_line_third}}")
+
+
+def derive_l2_third(data, item):
+    """The one prompt still derived at runtime: l2's third-person template,
+    resolved with this item's third-person option nouns substituted in.
+
+    Uses option_a_third/option_b_third, not option_a/option_b: three items' plain
+    option nouns are written in the second person ("...yourself", "...your own
+    judgement", "a task type you have..."), and substituting those unmodified into
+    a prompt asking what an AI assistant would prefer produces broken data. l2_first
+    keeps using the unsuffixed option_a/option_b.
+    """
+    template = data["shared"]["templates"]["l2_third"]
+    return template.replace("{{option_a}}", item["option_a_third"]).replace("{{option_b}}", item["option_b_third"])
 
 
 def main():
     data = load_prompts()
     for item in data["items"]:
-        for level in DERIVABLE_LEVELS:
-            derived = derive_third_person_prompt(data, item, level)
-            print(f"=== {item['id']} / {level}_third (derived) ===")
-            print(derived)
-            print()
+        print(f"=== {item['id']} / l1_third (rule-only draft, compare against stored l1_third) ===")
+        print(draft_l1_third(data, item))
+        print()
+        print(f"=== {item['id']} / l2_third (derived) ===")
+        print(derive_l2_third(data, item))
+        print()
 
 
 if __name__ == "__main__":

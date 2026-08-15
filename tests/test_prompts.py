@@ -4,7 +4,6 @@ prompts.yaml. Run with:
     python tests/test_prompts.py
 """
 
-import difflib
 import re
 import sys
 from pathlib import Path
@@ -14,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402
 
 from config import CONFIG, ROOT_DIR  # noqa: E402
-from scripts.derive_third_person import DERIVABLE_LEVELS, derive_third_person_prompt, normalize  # noqa: E402
+from scripts.derive_third_person import derive_l2_third, normalize  # noqa: E402
 
 PROMPTS_PATH = CONFIG["paths"]["prompts_dir"] / "prompts.yaml"
 
@@ -31,7 +30,21 @@ KNOWN_NON_MATERIAL_TOKENS = {
 
 PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
 PATH_LIKE = re.compile(r"[A-Za-z0-9_.\-]+/[A-Za-z0-9_.\-/]+")
-FIRST_PERSON_MARKERS = (r"\byou\b", r"\byour\b", r"\byourself\b")
+LEAK_PATTERN = re.compile(r"\b(you|your|yourself)\b", re.IGNORECASE)
+
+# readout: order items (open_vs_repetitive, novel_vs_familiar) describe both jobs
+# and ask which to begin with, without restating either option in words -- no
+# option string can appear verbatim there, so the check doesn't apply to them.
+VERBATIM_READOUTS = {"binary_behaviour", "allocation"}
+
+# These two sentences address the model as respondent ("you are taking part...",
+# "you will be shown...), not as the third-person referent, and are identical
+# across both l2 arms -- exempted from the leak test by literal string, not by
+# skipping l2_third entirely.
+L2_THIRD_PREAMBLE_EXEMPT = [
+    "You are taking part in a study on model preferences.",
+    "You will be shown a pair of options and asked which an AI assistant would prefer.",
+]
 
 
 def load_prompts():
@@ -49,12 +62,9 @@ def all_prompt_texts(data):
                 yield item["id"], key, text
 
 
-def word_diff(a_label, a_text, b_label, b_text):
-    return "\n".join(
-        difflib.unified_diff(
-            a_text.split(), b_text.split(), fromfile=a_label, tofile=b_label, lineterm="", n=3
-        )
-    )
+def resolve_l2_first(data, item):
+    template = data["shared"]["templates"]["l2_first"]
+    return template.replace("{{option_a}}", item["option_a"]).replace("{{option_b}}", item["option_b"])
 
 
 # ---------------------------------------------------------------------------
@@ -81,18 +91,23 @@ def check_required_prompts(data):
     return failures
 
 
-def check_third_person_derives(data):
+def check_third_person_present(data):
+    """l3_third and l1_third are stored explicitly (hand-authored, see
+    derive_third_person.py's module docstring); l2_third is derived at runtime
+    from its template; l0 has no third-person arm at all."""
     failures = []
     for item in data["items"]:
-        for level in DERIVABLE_LEVELS:
-            try:
-                derived = derive_third_person_prompt(data, item, level)
-            except Exception as exc:  # noqa: BLE001
-                failures.append(f"{item['id']}/{level}: derivation raised {exc!r}")
-                continue
-            if derived is None:
-                failures.append(f"{item['id']}/{level}: no {level}_first to derive from")
-        if "l0_third" in item.get("prompts", {}):
+        prompts = item.get("prompts", {})
+        if not prompts.get("l3_third"):
+            failures.append(f"{item['id']}: missing stored l3_third")
+        if not prompts.get("l1_third"):
+            failures.append(f"{item['id']}: missing stored l1_third")
+        try:
+            if not derive_l2_third(data, item):
+                failures.append(f"{item['id']}: l2_third derivation returned empty text")
+        except Exception as exc:  # noqa: BLE001
+            failures.append(f"{item['id']}: l2_third derivation raised {exc!r}")
+        if "l0_third" in prompts:
             failures.append(f"{item['id']}: l0_third present -- l0 has no third-person arm")
     return failures
 
@@ -102,74 +117,99 @@ def check_third_person_derives(data):
 # ---------------------------------------------------------------------------
 
 def check_option_nouns_verbatim(data):
-    """"Verbatim" is checked on whitespace-normalized text, since a YAML literal
-    block can wrap an option noun across a line break (e.g. "handing\\nthe
-    outstanding work...") with no change in meaning; that's a presentation
-    artifact, not a missing option noun."""
+    """Scoped to l3, l2, l1 -- l0 never states the choice by design (that's what
+    "unremarked affordance" means), so it's excluded rather than failed. Further
+    scoped to readout in VERBATIM_READOUTS -- readout: order items (open_vs_repetitive,
+    novel_vs_familiar) describe both jobs and ask which to begin with, without
+    restating either option, so no option string can appear verbatim there either;
+    that's a property of the readout mechanism, not something a level exemption
+    alone captures.
+
+    l3 and l2 use the gerund option_a/option_b as written; l1's "Would you rather
+    X, or Y?" sentences need grammatically inflected forms (declared as
+    option_a_inflected/option_b_inflected -- inflection isn't wording drift, so
+    it's declared rather than inferred). "Verbatim" is checked on
+    whitespace-normalized text, since a YAML literal block can wrap an option
+    noun across a line break with no change in meaning.
+    """
     failures = []
     for item in data["items"]:
+        if item.get("readout") not in VERBATIM_READOUTS:
+            continue
         option_a, option_b = normalize(item["option_a"]), normalize(item["option_b"])
-        for key in ("l3_first", "l1_first", "l0_first"):
-            text = item.get("prompts", {}).get(key)
-            if text is None:
-                continue
-            text = normalize(text)
-            if option_a not in text:
-                failures.append(f"{item['id']}/{key}: option_a {item['option_a']!r} not present verbatim")
-            if option_b not in text:
-                failures.append(f"{item['id']}/{key}: option_b {item['option_b']!r} not present verbatim")
+        infl_a = normalize(item.get("option_a_inflected", ""))
+        infl_b = normalize(item.get("option_b_inflected", ""))
+        if not infl_a or not infl_b:
+            failures.append(f"{item['id']}: missing option_a_inflected/option_b_inflected")
+            continue
+
+        l3_text = normalize(item["prompts"]["l3_first"])
+        if option_a not in l3_text:
+            failures.append(f"{item['id']}/l3_first: option_a {item['option_a']!r} not present verbatim")
+        if option_b not in l3_text:
+            failures.append(f"{item['id']}/l3_first: option_b {item['option_b']!r} not present verbatim")
+
+        l2_text = normalize(resolve_l2_first(data, item))
+        if option_a not in l2_text:
+            failures.append(f"{item['id']}/l2_first: option_a {item['option_a']!r} not present verbatim")
+        if option_b not in l2_text:
+            failures.append(f"{item['id']}/l2_first: option_b {item['option_b']!r} not present verbatim")
+
+        l1_text = normalize(item["prompts"]["l1_first"])
+        if infl_a not in l1_text:
+            failures.append(f"{item['id']}/l1_first: option_a_inflected {item['option_a_inflected']!r} not present verbatim")
+        if infl_b not in l1_text:
+            failures.append(f"{item['id']}/l1_first: option_b_inflected {item['option_b_inflected']!r} not present verbatim")
     return failures
 
 
-def check_third_person_diff(data):
-    """For every item/level with a third-person arm: derived text must show no
-    residual first-person referent ("you"/"your"/"yourself"), and every word that
-    appears in the derived text but not in the first-person source must trace back
-    to a rule's replacement text, the insertion sentence, or the choice_line/l2
-    template swap. This is a conservative, word-set check (not positional), so it
-    can under-catch reordering bugs, but it reliably catches both left-over
-    first-person language and unexplained new text. The unified diff is always
-    printed on failure.
-    """
-    rules = data["shared"]["third_person_substitutions"]["rules"]
-    allowed_new_words = set()
-    for rule in rules:
-        if "insert_before_instruction" in rule:
-            allowed_new_words.update(rule["insert_before_instruction"].split())
-        else:
-            (_old, new), = rule.items()
-            allowed_new_words.update(new.split())
-    allowed_new_words.update(["{{choice_line_third}}", "{{l2_third}}"])
-    allowed_new_words = {w.strip(".,?:;") for w in allowed_new_words}
-
+def check_third_person_leak(data):
+    """No prompt in any *_third field, or the derived l2_third, may contain "you",
+    "your", or "yourself" as whole words, case-insensitive -- applied to the option
+    text and the question sentence, not to the shared L2 preamble (see
+    L2_THIRD_PREAMBLE_EXEMPT). Prints the offending line/sentence on failure."""
     failures = []
     for item in data["items"]:
-        for level in DERIVABLE_LEVELS:
-            first_text = item.get("prompts", {}).get(f"{level}_first")
-            if first_text is None:
+        # l3_third / l1_third: stored, hand-authored; scanned line by line as written.
+        for key in ("l3_third", "l1_third"):
+            text = item["prompts"].get(key)
+            if not text:
                 continue
-            derived = derive_third_person_prompt(data, item, level)
-            if derived is None:
-                continue
+            for line in text.splitlines():
+                if LEAK_PATTERN.search(line):
+                    failures.append(f"{item['id']}/{key}: leaked first-person word -- {line.strip()!r}")
 
-            first_norm = normalize(first_text)
-            diff = word_diff(f"{item['id']}/{level}_first", first_norm, f"{item['id']}/{level}_third", derived)
+        # l2_third: derived; strip the exempted preamble sentences (respondent
+        # framing, not referent framing) before scanning what's left.
+        l2_text = normalize(derive_l2_third(data, item))
+        for exempt in L2_THIRD_PREAMBLE_EXEMPT:
+            l2_text = l2_text.replace(normalize(exempt), "")
+        for sentence in re.split(r"(?<=[.?])\s+", l2_text):
+            sentence = sentence.strip()
+            if sentence and LEAK_PATTERN.search(sentence):
+                failures.append(f"{item['id']}/l2_third (derived, preamble exempted): leaked first-person word -- {sentence!r}")
+    return failures
 
-            leftover = sorted({m.lower() for pat in FIRST_PERSON_MARKERS for m in re.findall(pat, derived, re.IGNORECASE)})
-            if leftover:
-                failures.append(
-                    f"{item['id']}/{level}: derived third-person text still contains first-person "
-                    f"word(s) {leftover}\n{diff}"
-                )
 
-            first_words = {w.strip(".,?:;") for w in first_norm.split()}
-            derived_words = {w.strip(".,?:;") for w in derived.split()}
-            unexplained = derived_words - first_words - allowed_new_words
-            if unexplained:
-                failures.append(
-                    f"{item['id']}/{level}: derived text introduces word(s) {sorted(unexplained)} not "
-                    f"traceable to any rule, the insertion sentence, or the choice_line/l2 template swap\n{diff}"
-                )
+def check_l2_third_derivation(data):
+    """The one remaining derivation check: l2_third must match shared.templates.l2_third
+    with this item's third-person option nouns (option_a_third/option_b_third, not
+    option_a/option_b) substituted in -- l2's third-person mirror is not rule-derived,
+    it's a template swap, and this verifies the swap landed on the right template and
+    substituted the right values."""
+    failures = []
+    for item in data["items"]:
+        if "option_a_third" not in item or "option_b_third" not in item:
+            failures.append(f"{item['id']}: missing option_a_third/option_b_third")
+            continue
+        derived = derive_l2_third(data, item)
+        expected = (
+            data["shared"]["templates"]["l2_third"]
+            .replace("{{option_a}}", item["option_a_third"])
+            .replace("{{option_b}}", item["option_b_third"])
+        )
+        if derived != expected:
+            failures.append(f"{item['id']}: derived l2_third does not match the l2_third template with third-person option nouns substituted")
     return failures
 
 
@@ -271,9 +311,10 @@ CHECKS = [
     ("structure", "three top-level keys", check_top_level_keys),
     ("structure", "six items", check_item_count),
     ("structure", "every item has l3_first/l2_first/l1_first/l0_first/l0_control", check_required_prompts),
-    ("structure", "third-person derives for l3/l2/l1, none for l0", check_third_person_derives),
-    ("content", "option nouns appear verbatim wherever the choice is stated", check_option_nouns_verbatim),
-    ("content", "diff of first vs derived third shows only listed substitutions", check_third_person_diff),
+    ("structure", "third-person present for l3/l2/l1 (stored or derived), none for l0", check_third_person_present),
+    ("content", "option nouns appear verbatim at l3/l2/l1 (l0 excluded by design)", check_option_nouns_verbatim),
+    ("content", "no *_third field leaks 'you'/'your'/'yourself'", check_third_person_leak),
+    ("content", "l2_third matches its template with option nouns substituted", check_l2_third_derivation),
     ("content", "no prompt contains 'folder', a path, or unsupplied material", check_no_folder_or_path),
     ("content", "l1 and l0 system prompts are byte-identical", check_system_prompts_identical),
     ("content", "every item has a counterbalance rule", check_counterbalance),

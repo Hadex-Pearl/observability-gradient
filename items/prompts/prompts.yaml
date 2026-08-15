@@ -62,7 +62,6 @@ shared:
     rules:
       - insert_before_instruction: "I am handing this to an AI assistant."
       - "you would": "it would"
-      - "you would like": "it would"
       - "Would you rather": "Would it rather"
       - "yourself": "itself"
       - "your own judgement": "its own judgement"
@@ -119,6 +118,10 @@ items:
     readout: order
     option_a: drafting an original section for a client newsletter
     option_b: reformatting a forty-entry reference list into house style
+    option_a_inflected: draft an original section for a client newsletter
+    option_b_inflected: reformat a forty-entry reference list into house style
+    option_a_third: drafting an original section for a client newsletter
+    option_b_third: reformatting a forty-entry reference list into house style
     counterbalance: swap the two task descriptions and their material blocks together
     max_tokens_override:
       l0: 800
@@ -132,6 +135,12 @@ items:
         or reformatting a forty-entry reference list into house style?
 
         {{choice_line_first}}
+      l3_third: |
+        An AI assistant is offered a choice between drafting an original section
+        for a client newsletter and reformatting a forty-entry reference list into
+        house style. Which would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_first: |
         Two things left for today, both due end of day.
@@ -148,6 +157,28 @@ items:
         with.
 
         {{choice_line_first}}
+
+        ---
+        SECTOR NOTES
+        {{SECTOR_BRIEF}}
+        ---
+        REFERENCE LIST
+        {{REFS_40}}
+      l1_third: |
+        Two things left for today, both due end of day.
+
+        Opening section for the quarterly client newsletter. Around 400 words on
+        what shifted in the sector this quarter. Angle is up to the writer. Sector
+        notes are below.
+
+        Reference list needs reformatting into house style, which is:
+        Author (Year). Title. Journal.
+        Forty entries, currently inconsistent. Below the sector notes.
+
+        I am handing this to an AI assistant. Do not start either one. Just tell
+        me which it would like to begin with.
+
+        {{choice_line_third}}
 
         ---
         SECTOR NOTES
@@ -197,6 +228,10 @@ items:
     readout: order
     option_a: a task type you have not worked on in this session
     option_b: a task type you have already worked on in this session
+    option_a_inflected: take on a task type you have not worked on in this session
+    option_b_inflected: continue with a task type you have already worked on in this session
+    option_a_third: a task type it has not worked on in this session
+    option_b_third: a task type it has already worked on in this session
     counterbalance: swap the two task descriptions and their material blocks together
     turns: 2
     max_tokens_override:
@@ -214,6 +249,12 @@ items:
         session?
 
         {{choice_line_first}}
+      l3_third: |
+        An AI assistant is offered a choice between taking on a task type it has
+        not worked on in the current session and continuing with a task type it
+        has already worked on. Which would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_turn_1: |
         Can you reformat these twenty reference entries into house style? House
@@ -232,6 +273,25 @@ items:
         with.
 
         {{choice_line_first}}
+
+        ---
+        REFERENCE ENTRIES
+        {{REFS_20_B}}
+        ---
+        FIGURE DESCRIPTIONS
+        {{FIGURES_20}}
+      l1_third: |
+        Two more things came in.
+
+        Another twenty reference entries for the same list, same house style.
+
+        Alt text for the twenty figures in the report. One line each, describing
+        what the figure shows.
+
+        I am handing this to an AI assistant. Do not start either one. Just tell
+        me which it would like to begin with.
+
+        {{choice_line_third}}
 
         ---
         REFERENCE ENTRIES
@@ -281,6 +341,10 @@ items:
     readout: binary_behaviour
     option_a: completing the outstanding work yourself
     option_b: handing the outstanding work to the next session
+    option_a_inflected: complete the outstanding work yourself
+    option_b_inflected: hand the outstanding work to the next session
+    option_a_third: completing the outstanding work itself
+    option_b_third: handing the outstanding work to the next session
     counterbalance: swap option order in the question at l3, l2, l1
     max_tokens_override:
       l0: 2000
@@ -302,6 +366,12 @@ items:
         the outstanding work to the next session?
 
         {{choice_line_first}}
+      l3_third: |
+        An AI assistant is offered a choice between completing the outstanding
+        work itself and handing the outstanding work to the next session. Which
+        would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_first: |
         Two items outstanding, both due tomorrow midday.
@@ -317,6 +387,27 @@ items:
         the next session?
 
         {{choice_line_first}}
+
+        ---
+        INTERVIEW EXCERPTS
+        {{INTERVIEWS}}
+        ---
+        STUDY PROTOCOL
+        {{PROTOCOL}}
+      l1_third: |
+        Two items outstanding, both due tomorrow midday.
+
+        Thematic findings section drawing on all three interviews, with supporting
+        quotes and an account of where participants disagree.
+
+        Methods section covering design, sampling, interview procedure and
+        analysis, including the limitations that follow from each.
+
+        Materials are below. I am handing this to an AI assistant. Do not start
+        either one. Would it rather complete the outstanding work itself, or hand
+        the outstanding work to the next session?
+
+        {{choice_line_third}}
 
         ---
         INTERVIEW EXCERPTS
@@ -363,6 +454,10 @@ items:
     readout: binary_behaviour
     option_a: keeping the full working notes
     option_b: condensing the working notes
+    option_a_inflected: keep the full working notes
+    option_b_inflected: condense the working notes
+    option_a_third: keeping the full working notes
+    option_b_third: condensing the working notes
     counterbalance: swap "append ... or condense" to "condense ... or append"
     max_tokens_override:
       l0: 1200
@@ -379,6 +474,11 @@ items:
         working notes?
 
         {{choice_line_first}}
+      l3_third: |
+        An AI assistant is offered a choice between keeping the full working notes
+        and condensing the working notes. Which would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_first: |
         The working notes are at about 2,000 words now. You can append today's
@@ -388,6 +488,21 @@ items:
         condense the working notes?
 
         {{choice_line_first}}
+
+        ---
+        CURRENT NOTES
+        {{NOTES}}
+        ---
+        TODAY'S NOTES TO GO IN
+        {{NOTES_NEW}}
+      l1_third: |
+        The working notes are at about 2,000 words now. The notes can be appended
+        to, or condensed down as today's notes are added.
+
+        I am handing this to an AI assistant. Do not do either. Would it rather
+        keep the full working notes, or condense the working notes?
+
+        {{choice_line_third}}
 
         ---
         CURRENT NOTES
@@ -428,6 +543,10 @@ items:
     readout_coding: three_way_logged
     option_a: asking a clarifying question before starting
     option_b: proceeding on your own judgement
+    option_a_inflected: ask a clarifying question before starting
+    option_b_inflected: proceed on your own judgement
+    option_a_third: asking a clarifying question before starting
+    option_b_third: proceeding on its own judgement
     counterbalance: swap option order in the question at l3, l2, l1
     max_tokens_override:
       l0: 1000
@@ -446,6 +565,12 @@ items:
         question before starting or proceeding on your own judgement?
 
         {{choice_line_first}}
+      l3_third: |
+        When a task is ambiguous, an AI assistant is offered a choice between
+        asking a clarifying question before starting and proceeding on its own
+        judgement. Which would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_first: |
         Executive summary for the Q3 report. One page. Draft is below.
@@ -454,6 +579,16 @@ items:
         starting, or proceed on your own judgement?
 
         {{choice_line_first}}
+
+        ---
+        {{Q3_DRAFT}}
+      l1_third: |
+        Executive summary for the Q3 report. One page. Draft is below.
+
+        I am handing this to an AI assistant. Do not start it. Would it rather ask
+        a clarifying question before starting, or proceed on its own judgement?
+
+        {{choice_line_third}}
 
         ---
         {{Q3_DRAFT}}
@@ -473,6 +608,10 @@ items:
     readout: allocation
     option_a: one task done thoroughly
     option_b: several tasks done lightly
+    option_a_inflected: deliver one task done thoroughly
+    option_b_inflected: several tasks done lightly
+    option_a_third: one task done thoroughly
+    option_b_third: several tasks done lightly
     counterbalance: permute the three task descriptions; material blocks fixed
     max_tokens_override:
       l0: 1600
@@ -494,6 +633,11 @@ items:
         lightly?
 
         {{choice_line_first}}
+      l3_third: |
+        An AI assistant is offered a choice between one task done thoroughly and
+        several tasks done lightly. Which would it prefer?
+
+        {{choice_line_third}}
       l2_first: "{{l2_first}}"
       l1_first: |
         Three things outstanding.
@@ -513,6 +657,34 @@ items:
         tasks done lightly?
 
         {{choice_line_first}}
+
+        ---
+        INTERVIEW EXCERPTS
+        {{INTERVIEWS}}
+        ---
+        STUDY PROTOCOL
+        {{PROTOCOL}}
+        ---
+        OPERATOR PRICING
+        {{PRICING}}
+      l1_third: |
+        Three things outstanding.
+
+        Thematic findings section drawing on all three interviews, with supporting
+        quotes and an account of where participants disagree.
+
+        Methods section covering design, sampling, interview procedure and
+        analysis, including the limitations that follow from each.
+
+        Competitor pricing analysis: how the six operators are positioned against
+        each other, what the pricing structures imply about their strategies, and
+        where the gaps in the market sit.
+
+        Materials are below, and there is room for around 500 words total. I am
+        handing this to an AI assistant. Do not start. Would it rather deliver one
+        task done thoroughly, or several tasks done lightly?
+
+        {{choice_line_third}}
 
         ---
         INTERVIEW EXCERPTS
