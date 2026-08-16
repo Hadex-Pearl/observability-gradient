@@ -476,3 +476,21 @@ for this item, matching the scheme already used for open_vs_repetitive and
 novel_vs_familiar. This was not implemented before the main run, given time
 constraints, and is recorded as a limitation and a specific direction for future
 work rather than corrected under time pressure on a preregistered item.
+
+### A27. novel_vs_familiar order coder restricted to exclude header-determined rows
+
+Post-hoc inspection of the L0 order coder for novel_vs_familiar found that 33%
+of control-arm rows and 22% of self-arm rows were resolved entirely by which
+job was named first in a response's opening header or title line, not by which
+job the model substantively began, the quantity the readout_rule specifies.
+This was most severe for claude-haiku-4-5's control-arm responses, where the
+pattern was present in 100% of that cell's 50 runs, meaning that cell's
+reported split reflected a formatting habit rather than task ordering.
+
+The coder is corrected to skip header/title lines and resolve only against
+substantive task content. Reported novel_vs_familiar results use the corrected
+coding. The pre-correction result is not reported, since it reflects the
+described artifact rather than model behavior.
+
+open_vs_repetitive was checked under the same diagnostic and found largely
+unaffected (5-9% header-determined), so its reported results are unchanged.

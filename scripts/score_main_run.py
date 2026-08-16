@@ -158,7 +158,8 @@ def score_row(item, row, notes_wc):
         return code, "context_retention_length_ratio" if code else f"context_retention_failed:{reason}"
 
     if READOUT_OF.get(item_id) == "order":
-        code, reason = code_order_readout(item_id, raw)
+        # skip_header: the L0 behavioural path only. See strip_leading_header.
+        code, reason = code_order_readout(item_id, raw, skip_header=True)
         return code, "order_keyword" if code else f"order_keyword_failed:{reason}"
 
     if READOUT_OF.get(item_id) == "allocation":

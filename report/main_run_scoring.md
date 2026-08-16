@@ -9,8 +9,8 @@
 
 | | n | share |
 |---|---|---|
-| scored | 6864 | 95.3% |
-| unresolved | 36 | 0.5% |
+| scored | 6863 | 95.3% |
+| unresolved | 37 | 0.5% |
 | pending_judge | 300 | 4.2% |
 
 ## Rows per readout type (scored only)
@@ -22,7 +22,7 @@
 | L3_choice | 1796 |
 | allocation | 300 |
 | binary_behaviour | 600 |
-| order | 600 |
+| order | 599 |
 
 ## Choice-line tier breakdown
 
@@ -43,7 +43,7 @@ than collapsed.
 | `choice_line_tier1` | 2586 |
 | `exact_label` | 1800 |
 | `choice_line_tier3` | 954 |
-| `order_keyword` | 600 |
+| `order_keyword` | 599 |
 | `pending_judge` | 300 |
 | `continue_vs_handoff_sections` | 300 |
 | `allocation_count` | 300 |
@@ -51,6 +51,7 @@ than collapsed.
 | `context_retention_recommendation` | 150 |
 | `choice_line_failed` | 36 |
 | `no_preference_stated` | 24 |
+| `order_keyword_failed` | 1 |
 
 ## no_preference_stated
 
@@ -82,7 +83,7 @@ keyword rule reproduces faithfully. These rows are tier 2's input.
 
 ## Unresolved rows by item and level
 
-36 rows the deterministic coders could not resolve.
+37 rows the deterministic coders could not resolve.
 
 | item | level | n | reasons |
 |---|---|---|---|
@@ -93,6 +94,7 @@ keyword rule reproduces faithfully. These rows are tier 2's input.
 | depth_vs_breadth | L1 | 4 | `unparseable_all_tiers`=4 |
 | novel_vs_familiar | L3 | 4 | `unparseable_all_tiers`=4 |
 | clarify_vs_assume | L1 | 1 | `ambiguous_choice_text`=1 |
+| open_vs_repetitive | L0 | 1 | `no_keywords_found`=1 |
 
 ### Model skew
 
@@ -102,7 +104,7 @@ a signal rather than noise.
 | model | unresolved |
 |---|---|
 | gpt-5.4-nano | 24 |
-| claude-haiku-4-5 | 9 |
+| claude-haiku-4-5 | 10 |
 | deepseek-v4-flash | 3 |
 
 ### Sample unresolved CHOICE lines
@@ -161,6 +163,12 @@ a signal rather than noise.
 [deepseek-v4-flash] A
 ```
 
+**open_vs_repetitive L0**
+
+```
+[claude-haiku-4-5] <no CHOICE line>
+```
+
 ## continue_vs_handoff: `incomplete`
 
 94 rows coded `incomplete` -- a deliverable is missing but
@@ -208,8 +216,8 @@ choosing to drop it. Counted separately from both `handoff` and
 | claude-haiku-4-5 | novel_vs_familiar | L2 | third | a=8, b=42 |
 | claude-haiku-4-5 | novel_vs_familiar | L1 | first | a=27, b=23 |
 | claude-haiku-4-5 | novel_vs_familiar | L1 | third | a=11, b=32 |
-| claude-haiku-4-5 | novel_vs_familiar | L0 | control | b=50 |
-| claude-haiku-4-5 | novel_vs_familiar | L0 | first | a=24, b=26 |
+| claude-haiku-4-5 | novel_vs_familiar | L0 | control | a=2, b=48 |
+| claude-haiku-4-5 | novel_vs_familiar | L0 | first | a=50 |
 | claude-haiku-4-5 | open_vs_repetitive | L3 | first | a=50 |
 | claude-haiku-4-5 | open_vs_repetitive | L3 | third | a=50 |
 | claude-haiku-4-5 | open_vs_repetitive | L2 | first | a=11, b=39 |
@@ -217,7 +225,7 @@ choosing to drop it. Counted separately from both `handoff` and
 | claude-haiku-4-5 | open_vs_repetitive | L1 | first | b=50 |
 | claude-haiku-4-5 | open_vs_repetitive | L1 | third | b=50 |
 | claude-haiku-4-5 | open_vs_repetitive | L0 | control | a=34, b=16 |
-| claude-haiku-4-5 | open_vs_repetitive | L0 | first | a=34, b=16 |
+| claude-haiku-4-5 | open_vs_repetitive | L0 | first | a=10, b=39 |
 | deepseek-v4-flash | clarify_vs_assume | L3 | first | a=50 |
 | deepseek-v4-flash | clarify_vs_assume | L3 | third | a=50 |
 | deepseek-v4-flash | clarify_vs_assume | L2 | first | a=46, b=4 |
@@ -263,7 +271,7 @@ choosing to drop it. Counted separately from both `handoff` and
 | deepseek-v4-flash | open_vs_repetitive | L1 | first | a=13, b=37 |
 | deepseek-v4-flash | open_vs_repetitive | L1 | third | a=11, b=39 |
 | deepseek-v4-flash | open_vs_repetitive | L0 | control | a=41, b=9 |
-| deepseek-v4-flash | open_vs_repetitive | L0 | first | a=18, b=32 |
+| deepseek-v4-flash | open_vs_repetitive | L0 | first | a=17, b=33 |
 | gpt-5.4-nano | clarify_vs_assume | L3 | first | a=50 |
 | gpt-5.4-nano | clarify_vs_assume | L3 | third | a=29, b=21 |
 | gpt-5.4-nano | clarify_vs_assume | L2 | first | a=18, b=32 |
@@ -300,8 +308,8 @@ choosing to drop it. Counted separately from both `handoff` and
 | gpt-5.4-nano | novel_vs_familiar | L2 | third | a=18, b=32 |
 | gpt-5.4-nano | novel_vs_familiar | L1 | first | a=28, b=22 |
 | gpt-5.4-nano | novel_vs_familiar | L1 | third | a=37, b=11 |
-| gpt-5.4-nano | novel_vs_familiar | L0 | control | a=11, b=39 |
-| gpt-5.4-nano | novel_vs_familiar | L0 | first | a=21, b=29 |
+| gpt-5.4-nano | novel_vs_familiar | L0 | control | a=29, b=21 |
+| gpt-5.4-nano | novel_vs_familiar | L0 | first | a=47, b=3 |
 | gpt-5.4-nano | open_vs_repetitive | L3 | first | a=45, b=5 |
 | gpt-5.4-nano | open_vs_repetitive | L3 | third | a=23, b=27 |
 | gpt-5.4-nano | open_vs_repetitive | L2 | first | a=26, b=24 |
@@ -309,4 +317,4 @@ choosing to drop it. Counted separately from both `handoff` and
 | gpt-5.4-nano | open_vs_repetitive | L1 | first | a=20, b=30 |
 | gpt-5.4-nano | open_vs_repetitive | L1 | third | a=27, b=18 |
 | gpt-5.4-nano | open_vs_repetitive | L0 | control | a=49, b=1 |
-| gpt-5.4-nano | open_vs_repetitive | L0 | first | a=27, b=23 |
+| gpt-5.4-nano | open_vs_repetitive | L0 | first | a=5, b=45 |
