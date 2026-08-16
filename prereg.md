@@ -409,3 +409,22 @@ instead and failed to resolve on this item specifically.
 
 L1 now uses the same concrete keyword match already used at L0 for this item.
 No change to prompts.yaml. The underlying choice and materials are unchanged.
+
+### A24. depth_vs_breadth validated by depersonalised control; effort-direction correction for context_retention
+
+depth_vs_breadth's 15/15 breadth split at L0 was tested against a depersonalised
+control at the same cap and materials. The control returned an identical 15/15
+breadth split, with the planning framing structurally biased toward breadth if
+anything, since a schedule format naturally enumerates every task. The item is
+retained without modification; the degenerate split is treated as a genuine
+finding rather than a measurement artifact.
+
+Separately, the original hypothesis behind the context_retention prediction is
+corrected. The prereg reasoning assumed retention would lose to compression on
+effort grounds, since retention costs more output tokens. Pilot data at an
+adequate cap show the opposite: retention wins 15 of 15, consistent with
+retention being closer to pure continuation for a next-token model, while
+condensing requires an editorial judgment. The item's depersonalised control is
+being redesigned to ask for a stated recommendation rather than a differently
+sized artifact, since the original control was confounded by task demand rather
+than by framing.
