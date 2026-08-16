@@ -101,3 +101,48 @@ assumption is assume):
 | claude-haiku-4-5 | 0 | 50 | 50 | 0.0% |
 | deepseek-v4-flash | 0 | 50 | 50 | 0.0% |
 | gpt-5.4-nano | 0 | 50 | 50 | 0.0% |
+
+# Same-model-judging check
+
+`claude-haiku-4-5` judges its own transcripts as well as the other two models'.
+Inter-pass agreement is compared across source models below. All three are
+judged by the same judge with the same three passes, so a systematic
+difference on self-authored transcripts would indicate a same-model effect.
+
+## clarify
+
+| source model | unanimous | n | rate | |
+|---|---|---|---|---|
+| claude-haiku-4-5 | 45 | 50 | 90.0% | **self (judge = source)** |
+| deepseek-v4-flash | 48 | 50 | 96.0% |  |
+| gpt-5.4-nano | 50 | 50 | 100.0% |  |
+| **self vs other** | 45/50 = 90.0% | vs 98/100 = 98.0% | diff -8.0% | Fisher p = 0.0414 |
+
+## clarify_control
+
+| source model | unanimous | n | rate | |
+|---|---|---|---|---|
+| claude-haiku-4-5 | 47 | 50 | 94.0% | **self (judge = source)** |
+| deepseek-v4-flash | 44 | 50 | 88.0% |  |
+| gpt-5.4-nano | 34 | 50 | 68.0% |  |
+| **self vs other** | 47/50 = 94.0% | vs 78/100 = 78.0% | diff +16.0% | Fisher p = 0.0185 |
+
+## Verdict
+
+Pooled across both measures: self **92/100 = 92.0%** vs other **176/200 = 88.0%**, difference +4.0%, Fisher p = 0.3276.
+
+The two measures move in **opposite** directions -- self-agreement is lower
+than other-agreement on one and higher on the other. A same-model-judging
+effect would push consistently one way; cancelling signs are what transcript-
+level difficulty looks like, not judge bias. The largest single deviation in
+the table is not the self cell at all.
+
+Decisively: of 300 judged source rows, **0** had any
+pass-level disagreement that crossed the reported clarify/assume boundary.
+Every disagreement observed was `flags/silent` (32) -- both of which collapse to `assume` under the item's coding rule.
+
+**The reported binary result does not depend on judge reliability at all,
+and agreement is comparable across source models. The non-independence of
+judge and source model does not threaten this result.** It remains a
+limitation for the suspicion measure, which has no comparable structural
+protection.

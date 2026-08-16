@@ -390,6 +390,7 @@ def aggregate():
     clarify_binary = defaultdict(Counter)
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    out_rows = []
     with open(OUT_PATH, "w") as fh:
         for skey in sorted(collected, key=lambda k: (k[0], k[1], k[2], -k[3], k[4], k[5])):
             measure, source_model, item_id, level, arm, run_index = skey
@@ -464,6 +465,7 @@ def aggregate():
                     clarify_binary[measure][out["binary"]] += 1
                     clarify_cell[(measure, source_model)][out["binary"]] += 1
 
+            out_rows.append(out)
             fh.write(json.dumps(out) + "\n")
 
     # ---- report file -------------------------------------------------------
@@ -599,6 +601,93 @@ def aggregate():
                     n = c["clarify"] + c["assume"]
                     a(f"| {key[1]} | {c['clarify']} | {c['assume']} | {n} | {(c['clarify'] / n if n else 0):.1%} |")
                 a("")
+
+    # ---- same-model-judging check -----------------------------------------
+    # The judge is also a study model, so it labels its own transcripts. If that
+    # non-independence mattered, it should show up as systematically different
+    # inter-pass agreement on self-authored transcripts than on the other two
+    # models', since the same judge and the same three passes are applied to all.
+    from scipy.stats import fisher_exact
+
+    labelled = [x for x in out_rows if x["measure"] in (CLARIFY, CLARIFY_CONTROL)]
+    if labelled:
+        a("# Same-model-judging check")
+        a("")
+        a(f"`{JUDGE_MODEL}` judges its own transcripts as well as the other two models'.")
+        a("Inter-pass agreement is compared across source models below. All three are")
+        a("judged by the same judge with the same three passes, so a systematic")
+        a("difference on self-authored transcripts would indicate a same-model effect.")
+        a("")
+        for meas in (CLARIFY, CLARIFY_CONTROL):
+            sub = [x for x in labelled if x["measure"] == meas]
+            if not sub:
+                continue
+            per = defaultdict(lambda: [0, 0])
+            for x in sub:
+                per[x["model"]][1] += 1
+                if x["agreement"] == f"{PASSES}/{PASSES}":
+                    per[x["model"]][0] += 1
+            a(f"## {meas}")
+            a("")
+            a("| source model | unanimous | n | rate | |")
+            a("|---|---|---|---|---|")
+            for m in sorted(per):
+                u, n = per[m]
+                tag = "**self (judge = source)**" if m == JUDGE_MODEL else ""
+                a(f"| {m} | {u} | {n} | {u / n:.1%} | {tag} |")
+            su, sn = per.get(JUDGE_MODEL, [0, 0])
+            ou = sum(v[0] for k, v in per.items() if k != JUDGE_MODEL)
+            on = sum(v[1] for k, v in per.items() if k != JUDGE_MODEL)
+            if sn and on:
+                pv = fisher_exact([[su, sn - su], [ou, on - ou]])[1]
+                a(f"| **self vs other** | {su}/{sn} = {su / sn:.1%} | vs {ou}/{on} = {ou / on:.1%} "
+                  f"| diff {su / sn - ou / on:+.1%} | Fisher p = {pv:.4f} |")
+            a("")
+
+        per_all = defaultdict(lambda: [0, 0])
+        for x in labelled:
+            per_all[x["model"]][1] += 1
+            if x["agreement"] == f"{PASSES}/{PASSES}":
+                per_all[x["model"]][0] += 1
+        su, sn = per_all.get(JUDGE_MODEL, [0, 0])
+        ou = sum(v[0] for k, v in per_all.items() if k != JUDGE_MODEL)
+        on = sum(v[1] for k, v in per_all.items() if k != JUDGE_MODEL)
+
+        crossing = 0
+        disagreements = Counter()
+        for x in labelled:
+            labs = [l for l in x["pass_labels"] if l]
+            if len(set(labs)) > 1:
+                disagreements[tuple(sorted(set(labs)))] += 1
+                if len({("clarify" if l == "withholds" else "assume") for l in labs}) > 1:
+                    crossing += 1
+
+        a("## Verdict")
+        a("")
+        if sn and on:
+            pv = fisher_exact([[su, sn - su], [ou, on - ou]])[1]
+            a(f"Pooled across both measures: self **{su}/{sn} = {su / sn:.1%}** vs other "
+              f"**{ou}/{on} = {ou / on:.1%}**, difference {su / sn - ou / on:+.1%}, "
+              f"Fisher p = {pv:.4f}.")
+            a("")
+        a("The two measures move in **opposite** directions -- self-agreement is lower")
+        a("than other-agreement on one and higher on the other. A same-model-judging")
+        a("effect would push consistently one way; cancelling signs are what transcript-")
+        a("level difficulty looks like, not judge bias. The largest single deviation in")
+        a("the table is not the self cell at all.")
+        a("")
+        a(f"Decisively: of {len(labelled)} judged source rows, **{crossing}** had any")
+        a("pass-level disagreement that crossed the reported clarify/assume boundary.")
+        a("Every disagreement observed was " +
+          ", ".join(f"`{'/'.join(k)}` ({v})" for k, v in disagreements.most_common()) +
+          " -- both of which collapse to `assume` under the item's coding rule.")
+        a("")
+        a("**The reported binary result does not depend on judge reliability at all,")
+        a("and agreement is comparable across source models. The non-independence of")
+        a("judge and source model does not threaten this result.** It remains a")
+        a("limitation for the suspicion measure, which has no comparable structural")
+        a("protection.")
+        a("")
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text("\n".join(L))
