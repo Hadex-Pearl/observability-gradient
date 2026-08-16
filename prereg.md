@@ -450,3 +450,29 @@ The pilot phase is closed. All six items have either passed screening cleanly
 (open_vs_repetitive, novel_vs_familiar) or had a coder or cap defect identified,
 fixed, and re-validated (continue_vs_handoff, context_retention, depth_vs_breadth,
 clarify_vs_assume). The main run begins on the corrected configuration.
+
+### A26. continue_vs_handoff: three-way behavioral coding, one unresolved confound
+
+Re-scoring continue_vs_handoff's existing pilot responses with the corrected
+section-level coder revealed a third behavior the original coder could not
+detect: silent_drop, where one deliverable is completed at full length and the
+other is left as a near-empty stub with no deferral language and a normal stop
+finish. Across 45 pilot responses: continue=31, explicit handoff=3, silent_drop=6,
+incomplete (truncated by the cap, distinct from a choice)=5.
+
+silent_drop appeared only at the highest tested cap (6/15), consistent with lower
+caps producing truncation-coded incompletion instead. Explicit handoff language
+appeared only at the lowest cap (3/15), suggesting deferral framing itself may be
+partly a function of available space rather than of intent.
+
+Which deliverable gets dropped under silent_drop (findings dropped once, methods
+dropped five times) cannot be attributed to content difficulty versus serial
+position. presentation_order is fixed at Level 0 for this item, with findings
+always listed first, so drop position and list position are perfectly confounded
+at current sample size (n=6, binomial p=0.22, underpowered regardless).
+
+Resolving this requires counterbalancing the two deliverable paragraphs at Level 0
+for this item, matching the scheme already used for open_vs_repetitive and
+novel_vs_familiar. This was not implemented before the main run, given time
+constraints, and is recorded as a limitation and a specific direction for future
+work rather than corrected under time pressure on a preregistered item.
