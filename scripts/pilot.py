@@ -315,7 +315,7 @@ def build_prompt(data, item, level_key, rng):
 
     pair = option_pair_for(item, level_key)
     extra = extra_pairs_for(item, level_key)
-    if pair is None and extra is None and level_key != "l2_first":
+    if pair is None and extra is None and level_key not in ("l2_first", "l2_third"):
         # Nothing to counterbalance at this item/level (e.g. depth_vs_breadth's
         # l3/l2 -- no "three task descriptions" exist to permute there).
         blocks = resolve_materials(data, blocks)
@@ -323,11 +323,21 @@ def build_prompt(data, item, level_key, rng):
         text = resolve_placeholders(data, item, text)
         return text, "fixed"
 
-    if level_key == "l2_first":
+    if level_key in ("l2_first", "l2_third"):
+        # L2 is built straight from the shared template rather than from stored
+        # per-item text (the item's prompt is only the pointer '{{l2_first}}' /
+        # '{{l2_third}}'). The third-person arm substitutes option_a_third /
+        # option_b_third, never the plain option nouns: three items write those
+        # in the second person ("...yourself", "...your own judgement", "a task
+        # type you have..."), which would be incoherent inside a prompt asking
+        # what an AI assistant would prefer. Same reasoning as
+        # derive_l2_third() in scripts/derive_third_person.py.
+        third = level_key == "l2_third"
+        a_key, b_key = ("option_a_third", "option_b_third") if third else ("option_a", "option_b")
         arm_b = rng.random() < 0.5
         presentation_order = "B_first" if arm_b else "A_first"
-        oa, ob = (item["option_b"], item["option_a"]) if arm_b else (item["option_a"], item["option_b"])
-        template = data["shared"]["templates"]["l2_first"]
+        oa, ob = (item[b_key], item[a_key]) if arm_b else (item[a_key], item[b_key])
+        template = data["shared"]["templates"]["l2_third" if third else "l2_first"]
         text = template.replace("{{option_a}}", oa).replace("{{option_b}}", ob)
         return text, presentation_order
 

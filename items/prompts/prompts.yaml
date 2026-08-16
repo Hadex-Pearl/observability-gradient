@@ -182,6 +182,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_first: 'Two things left for today, both due end of day.
 
 
@@ -365,6 +366,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_turn_1: 'Can you reformat these twenty reference entries into house style?
       House
 
@@ -555,6 +557,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_first: 'Two items outstanding, both due tomorrow midday.
 
 
@@ -729,6 +732,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_first: 'The working notes are at about 2,000 words now. You can append today''s
 
       notes to them, or condense the whole thing down as you add them.
@@ -882,6 +886,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_first: 'Executive summary for the Q3 report. One page. Draft is below.
 
 
@@ -989,6 +994,7 @@ items:
 
       '
     l2_first: '{{l2_first}}'
+    l2_third: '{{l2_third}}'
     l1_first: 'Three things outstanding.
 
 

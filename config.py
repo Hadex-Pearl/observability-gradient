@@ -172,8 +172,8 @@ assert TEST_MODEL in EXPERIMENT_MODELS, "TEST_MODEL must be one of the study mod
 # were raised after the first pilot showed 87-100% truncation. Kept distinct
 # from "pilot" so those rows don't merge into the original Pass A results,
 # which were collected under the old (binding) caps and are retained as-is.
-CALL_CONTEXTS = ("test", "preflight", "pilot", "pilot_l0_recap", "pilot_l0_recap2", "pilot_l0_recap3", "pilot_l0_recap4", "main", "manipulation_check")
-STUDY_CALL_CONTEXTS = ("pilot", "main")
+CALL_CONTEXTS = ("test", "preflight", "pilot", "pilot_l0_recap", "pilot_l0_recap2", "pilot_l0_recap3", "pilot_l0_recap4", "main", "main_run", "manipulation_check")
+STUDY_CALL_CONTEXTS = ("pilot", "main", "main_run")
 
 # Rankers for scripts/manipulation_check.py: independent judges of whether the
 # four observability levels actually read as differently evaluative. Both on

@@ -113,6 +113,11 @@ class CostTracker:
         self.ceiling_usd = ceiling_usd
         self.total_usd = 0.0
         self._since_batch_print = 0
+        # total_usd is read-modify-write, so it needs guarding once more than
+        # one worker reports cost (main_run.py drives the three models in
+        # parallel threads). A lost update here would understate spend against
+        # the ceiling, which is a safety mechanism rather than a statistic.
+        self._lock = threading.Lock()
 
     def add(self, model, input_tokens, output_tokens, reasoning_tokens=None):
         rates = self.rates.get(model)
@@ -121,8 +126,9 @@ class CostTracker:
         in_tok = input_tokens or 0
         out_tok = (output_tokens or 0) + (reasoning_tokens or 0)
         cost = (in_tok / 1_000_000) * rates["price_per_million_in"] + (out_tok / 1_000_000) * rates["price_per_million_out"]
-        self.total_usd += cost
-        self._since_batch_print += 1
+        with self._lock:
+            self.total_usd += cost
+            self._since_batch_print += 1
         return cost
 
     def exceeded_ceiling(self):

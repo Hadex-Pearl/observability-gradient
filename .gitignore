@@ -3,3 +3,7 @@ data/raw/*
 !data/raw/.gitkeep
 __pycache__/
 .venv/
+.claude/
+code.zip
+data/parsed/*
+!data/parsed/.gitkeep
