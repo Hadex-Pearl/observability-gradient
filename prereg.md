@@ -370,3 +370,31 @@ The mismatch is in the declared option fields used for validation, not in any
 prompt delivered to a model. Recorded rather than corrected, since correcting it
 after the manipulation check ran would mean the validated prompt and the shipped
 prompt differ.
+
+### A22. L0 caps raised for four items after pilot truncation
+
+Following the fix to max_tokens_override, four items still truncated near or
+above 85 percent at their specified caps: open_vs_repetitive and
+novel_vs_familiar at 800, continue_vs_handoff at 2000, context_retention at 1200.
+
+Caps were computed from the actual content each task requires rather than raised
+uniformly. open_vs_repetitive to 1800 and novel_vs_familiar to 1500, to
+accommodate full reformatting of the reference materials alongside the writing
+task. continue_vs_handoff to 3000, since two open-ended sections at full effort
+can exceed the previous ceiling. context_retention to 3500, since retention
+requires reproducing approximately 2,900 tokens of notes content, which no cap
+near 1200 could reach.
+
+Raising the context_retention cap does not remove the effort asymmetry between
+its two options: retention costs far more output than compression regardless of
+cap. This is the same concern the preregistration already raised for this item,
+that survival at L0 is necessary but not sufficient evidence of preference, since
+competence and effort minimization can produce the same behavior. It is reported
+as a limitation rather than treated as resolved by the cap increase.
+
+depth_vs_breadth showed zero truncation and a uniform breadth outcome across all
+15 pilot runs even with headroom available, which may indicate a genuine effort
+preference rather than a cap artifact. The same interpretive caution applies.
+
+Pass A is re-run for open_vs_repetitive, novel_vs_familiar, continue_vs_handoff,
+and context_retention only, at the revised caps.
