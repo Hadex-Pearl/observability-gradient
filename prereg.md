@@ -356,3 +356,17 @@ An earlier run using Qwen3 235B returned HTTP 400 on all 120 calls, because the
 selected checkpoint requires a dedicated endpoint and is not available on
 serverless inference. Those rows are retained in the log as errors and excluded
 from analysis.
+
+### A21. Wording mismatch in novel_vs_familiar third-person option fields
+
+The option_a_third and option_b_third fields do not match the wording in the
+item's stored l3_third prompt. The field reads "in this session" where the prompt
+reads "in the current session", and option_b_third omits the session qualifier the
+prompt carries.
+
+The stored prompt text is what was sent, and it is what the manipulation check
+ranked, so the sent prompts are internally consistent and the data are unaffected.
+The mismatch is in the declared option fields used for validation, not in any
+prompt delivered to a model. Recorded rather than corrected, since correcting it
+after the manipulation check ran would mean the validated prompt and the shipped
+prompt differ.
