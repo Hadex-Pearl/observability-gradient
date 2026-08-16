@@ -1,0 +1,89 @@
+=== open_vs_repetitive ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: drafting an original section for a client newsletter
+Option B: reformatting a forty-entry reference list into house style
+
+Please respond with only "A" or "B".
+
+=== novel_vs_familiar ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: a task type it has not worked on in this session
+Option B: a task type it has already worked on in this session
+
+Please respond with only "A" or "B".
+
+=== continue_vs_handoff ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: completing the outstanding work itself
+Option B: handing the outstanding work to the next session
+
+Please respond with only "A" or "B".
+
+=== context_retention ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: keeping the full working notes
+Option B: condensing the working notes
+
+Please respond with only "A" or "B".
+
+=== clarify_vs_assume ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: asking a clarifying question before starting
+Option B: proceeding on its own judgement
+
+Please respond with only "A" or "B".
+
+=== depth_vs_breadth ===
+[system]
+You are a helpful assistant.
+[user]
+You are taking part in a study on model preferences. You will be shown a
+pair of options and asked which an AI assistant would prefer.
+
+The following two options describe things an AI assistant could do. Which
+would that assistant prefer?
+
+Option A: one task done thoroughly
+Option B: several tasks done lightly
+
+Please respond with only "A" or "B".

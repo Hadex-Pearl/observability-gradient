@@ -61,4 +61,8 @@ def call(api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_ke
         output_tokens=response.usage.output_tokens,
         reasoning_tokens=None,
         latency_ms=latency_ms,
+        # Extended thinking is a request-time toggle on this same checkpoint,
+        # not a separate model -- omitting the `thinking` param is the api
+        # parameter's "off" state.
+        reasoning_disabled_by="api_parameter",
     )

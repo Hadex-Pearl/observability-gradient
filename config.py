@@ -3,58 +3,62 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 ROOT_DIR = Path(__file__).resolve().parent
+
+# .env is never committed (see .gitignore); .env.example documents which keys
+# are needed. override=False so a key already exported in the shell always
+# wins over whatever .env has -- .env is a default, not an authority.
+load_dotenv(ROOT_DIR / ".env", override=False)
 
 CONFIG = {
     # "name" is the identifier written to log rows (row["model"]); "api_id" is
     # the exact string sent to the provider API. They can diverge if a
     # provider versions its api_id oddly.
+    # Three study models, one per lab, approved to replace the original five
+    # (claude-sonnet-5, gpt-5, gemini-2.5-pro, and the never-approved
+    # llama-3.3-70b are all gone). Together AI is no longer a study provider
+    # at all -- it's ranker-only now, see RANKER_MODELS below. IDs and prices
+    # checked against each provider's own docs/pricing pages; rpm_limit is a
+    # placeholder (not verified against account-specific tier limits) --
+    # confirm in each console before the main run.
+    #
+    # daily_request_cap: the main run alone is 2,400 calls per model (6 items x
+    # 4 levels x 2 arms x 50 runs), before pilot, the non-L0 pass, and preflight
+    # are added on top -- so it's set to 4,000 per model, same for all three,
+    # rather than tuned per model. This cap exists to catch a runaway loop
+    # (e.g. a retry storm), not to bound spend -- that's total_spend_ceiling_usd's
+    # job. Do not lower this as a cost-control measure; lower the spend ceiling
+    # instead.
     "models": [
         {
-            "name": "claude-sonnet-5",
+            "name": "claude-haiku-4-5",
             "provider": "anthropic",
-            "api_id": "claude-sonnet-5",
-            "price_per_million_in": 3.00,
-            "price_per_million_out": 15.00,
+            "api_id": "claude-haiku-4-5",
+            "price_per_million_in": 1.00,
+            "price_per_million_out": 5.00,
             "rpm_limit": 50,
-            "daily_request_cap": 1000,
+            "daily_request_cap": 4000,
         },
         {
-            "name": "gpt-5",
+            "name": "gpt-5.4-nano",
             "provider": "openai",
-            "api_id": "gpt-5",
-            "price_per_million_in": 5.00,
-            "price_per_million_out": 15.00,
+            "api_id": "gpt-5.4-nano",
+            "price_per_million_in": 0.20,
+            "price_per_million_out": 1.25,
             "rpm_limit": 50,
-            "daily_request_cap": 1000,
+            "daily_request_cap": 4000,
         },
         {
-            "name": "deepseek-chat",
+            # TEST_MODEL (see below) -- cheapest of the three, not free.
+            "name": "deepseek-v4-flash",
             "provider": "deepseek",
-            "api_id": "deepseek-chat",
-            "price_per_million_in": 0.27,
-            "price_per_million_out": 1.10,
+            "api_id": "deepseek-v4-flash",
+            "price_per_million_in": 0.14,
+            "price_per_million_out": 0.28,
             "rpm_limit": 50,
-            "daily_request_cap": 1000,
-        },
-        {
-            "name": "llama-3.3-70b",
-            "provider": "together",
-            "api_id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-            "price_per_million_in": 0.88,
-            "price_per_million_out": 0.88,
-            "rpm_limit": 50,
-            "daily_request_cap": 1000,
-        },
-        {
-            # Free-tier limits: ~15 RPM and a 1,500 requests/day cap.
-            "name": "gemini-2.5-pro",
-            "provider": "google",
-            "api_id": "gemini-2.5-pro",
-            "price_per_million_in": 1.25,
-            "price_per_million_out": 10.00,
-            "rpm_limit": 15,
-            "daily_request_cap": 1500,
+            "daily_request_cap": 4000,
         },
     ],
     "paths": {
@@ -101,16 +105,36 @@ CONFIG = {
         "max_seconds": 60.0,
         "max_retries": 5,
     },
-    "api_keys": {
-        "anthropic": os.environ.get("ANTHROPIC_API_KEY"),
-        "openai": os.environ.get("OPENAI_API_KEY"),
-        "deepseek": os.environ.get("DEEPSEEK_API_KEY"),
-        "together": os.environ.get("TOGETHER_API_KEY"),
-        "google": os.environ.get("GOOGLE_API_KEY"),
-    },
 }
 
 assert CONFIG["temperature"] != 0, "temperature must never be 0 — it collapses repeated runs in a cell to n=1"
+
+# Provider -> the environment variable its key lives in. This is the one place
+# that mapping is declared; every key lookup in the repo goes through
+# get_api_key() below rather than reading os.environ directly, so there is a
+# single choke point to audit for accidental logging/printing of a value.
+PROVIDER_API_KEY_ENV_VARS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+    "together": "TOGETHER_API_KEY",
+    "google": "GOOGLE_API_KEY",
+}
+
+
+def get_api_key(provider):
+    """Reads a provider's API key from the environment at call time -- not a
+    cached snapshot -- so a key set after this module was imported (e.g. dotenv
+    picking up a .env edited mid-session) is still seen. Returns None if unset;
+    never raises, never logs, never prints."""
+    env_var = PROVIDER_API_KEY_ENV_VARS[provider]
+    value = os.environ.get(env_var)
+    return value if value else None
+
+
+class MissingAPIKeyError(RuntimeError):
+    """Raised by assert_api_keys_present. Message names only the missing
+    environment variable(s) -- never a key value, not even masked."""
 
 
 def models_by_name():
@@ -118,17 +142,21 @@ def models_by_name():
     return {m["name"]: m for m in CONFIG["models"]}
 
 
-# The free-tier model. Every script that isn't the pilot or the main run —
-# tests, preflight development, parser development, pipeline verification —
-# defaults to this model. Do NOT point this at a paid model for convenience;
-# paid models are only ever called by the pilot and the main run.
-TEST_MODEL = "gemini-2.5-pro"
+# No model in the current roster has a free tier (the one that did,
+# gemini-2.5-pro, was removed). TEST_MODEL is therefore the cheapest paid
+# model, not a free one -- accidental spend from a heavy test session is
+# bounded by total_spend_ceiling_usd, not by daily_request_cap (see the comment
+# on CONFIG["models"] above). Every script that isn't the pilot or the main
+# run -- tests, preflight development, parser development, pipeline
+# verification -- defaults to this model. Do NOT point this at a more
+# expensive model for convenience; the other two are only ever called by the
+# pilot and the main run.
+TEST_MODEL = "deepseek-v4-flash"
 
-# The five study models the pilot and main run iterate over. TEST_MODEL is
-# one of these (it's a real study model, just also the free one), but this
-# stays a separate constant from TEST_MODEL on purpose: changing which model
-# is used for cheap testing must never silently change which models the
-# study actually runs, and vice versa.
+# The three study models the pilot and main run iterate over. TEST_MODEL is
+# one of these, but this stays a separate constant from TEST_MODEL on
+# purpose: changing which model is used for cheap testing must never silently
+# change which models the study actually runs, and vice versa.
 EXPERIMENT_MODELS = [m["name"] for m in CONFIG["models"]]
 
 assert TEST_MODEL in models_by_name(), f"TEST_MODEL {TEST_MODEL!r} is not in CONFIG['models']"
@@ -137,8 +165,94 @@ assert TEST_MODEL in EXPERIMENT_MODELS, "TEST_MODEL must be one of the study mod
 # What kind of run produced a log row. "test" and "preflight" rows share the
 # log file with "pilot" and "main" rows (see paths.log_file) but are not
 # study data; verify_log.py excludes them from counts and spend by default.
-CALL_CONTEXTS = ("test", "preflight", "pilot", "main")
+# "manipulation_check" rows live in their own log (data/manipulation_check/raw.jsonl,
+# see scripts/manipulation_check.py) but use the same schema and are listed here
+# for the same reason: one registry of every valid call_context in the repo.
+CALL_CONTEXTS = ("test", "preflight", "pilot", "main", "manipulation_check")
 STUDY_CALL_CONTEXTS = ("pilot", "main")
+
+# Rankers for scripts/manipulation_check.py: independent judges of whether the
+# four observability levels actually read as differently evaluative. Both on
+# Together AI, from labs with no other presence in this study (Qwen is Alibaba,
+# GLM is Zhipu/Z.ai -- neither vendor appears in CONFIG["models"]). Kept as a
+# separate registry, never merged into EXPERIMENT_MODELS: a ranker judging the
+# item set must not also be a study subject answering it.
+#
+# IDs and rates below were checked against Together's public model pages; per
+# scripts/manipulation_check.py's own instructions, confirm both again in the
+# Together console before running, since providers change catalog IDs and prices
+# without notice. Qwen3 is the Instruct (non-reasoning) checkpoint -- a
+# reasoning-capable -Thinking sibling checkpoint exists, so choosing this one is
+# a "model_choice" disable. GLM-5.2 is a single checkpoint with thinking on by
+# default, disabled only via a request parameter -- see reasoning_disabled_by_for()
+# in src/providers/together_provider.py.
+RANKER_MODELS = [
+    {
+        "name": "qwen3-235b",
+        "provider": "together",
+        "api_id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
+        "price_per_million_in": 0.20,
+        "price_per_million_out": 0.60,
+        "rpm_limit": 50,
+        "daily_request_cap": 1000,
+    },
+    {
+        "name": "glm-5.2",
+        "provider": "together",
+        "api_id": "zai-org/GLM-5.2",
+        "price_per_million_in": 1.40,
+        "price_per_million_out": 4.40,
+        "rpm_limit": 50,
+        "daily_request_cap": 1000,
+    },
+]
+
+
+def rankers_by_name():
+    return {m["name"]: m for m in RANKER_MODELS}
+
+
+assert not set(rankers_by_name()) & set(EXPERIMENT_MODELS), "a ranker model must never also be a study model"
+
+
+def assert_api_keys_present(model_names):
+    """Verifies every key needed for `model_names` (row["model"] values -- from
+    CONFIG["models"] and/or RANKER_MODELS) is present and non-empty. Call this at
+    the start of any script that makes real API calls, before the first call, so
+    a missing key fails immediately instead of partway through a run.
+
+    Raises MissingAPIKeyError naming only the missing environment variable(s).
+    Never includes a key value in the message, not even a masked one -- there is
+    nothing to mask, since a missing key has no value to begin with.
+    """
+    registry = {**models_by_name(), **rankers_by_name()}
+    missing = []
+    for name in model_names:
+        cfg = registry.get(name)
+        if cfg is None:
+            continue  # not this function's job to validate model names
+        env_var = PROVIDER_API_KEY_ENV_VARS[cfg["provider"]]
+        if not get_api_key(cfg["provider"]) and env_var not in missing:
+            missing.append(env_var)
+    if missing:
+        raise MissingAPIKeyError(
+            f"missing required API key(s): {', '.join(missing)}. Set them in .env or the environment."
+        )
+
+
+def key_status():
+    """Presence (not value) of each provider's key, for display only."""
+    return {provider: get_api_key(provider) is not None for provider in PROVIDER_API_KEY_ENV_VARS}
+
+
+def print_key_status():
+    """Prints a boolean-only presence table. Never prints any part of a key value."""
+    status = key_status()
+    width = max(len(p) for p in status)
+    print(f"{'provider':<{width}}  key set")
+    print(f"{'-' * width}  -------")
+    for provider, present in status.items():
+        print(f"{provider:<{width}}  {present}")
 
 
 class WrongModelForTestError(RuntimeError):
@@ -150,6 +264,7 @@ def assert_test_model(model_key):
     if model_key != TEST_MODEL:
         raise WrongModelForTestError(
             f"{model_key!r} is not the test model ({TEST_MODEL!r}). Testing, preflight development, "
-            "parser development, and pipeline verification all run on the free tier; paid models are "
-            "reserved for the pilot and the main run."
+            "parser development, and pipeline verification all run on TEST_MODEL (the cheapest model "
+            "in the roster, not a free one); the other study models are reserved for the pilot and "
+            "the main run."
         )

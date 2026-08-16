@@ -62,4 +62,7 @@ def call(api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_ke
         output_tokens=usage.candidates_token_count if usage else None,
         reasoning_tokens=reasoning_tokens,
         latency_ms=latency_ms,
+        # thinking_budget=0 is a request-time parameter on this same
+        # checkpoint -- there's no separate non-thinking Gemini model.
+        reasoning_disabled_by="api_parameter",
     )

@@ -7,7 +7,19 @@ from .base import ProviderError, ProviderResponse
 _warned_providers = set()
 
 
-def call(provider_name, base_url, api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_key):
+def call(
+    provider_name,
+    base_url,
+    api_id,
+    messages,
+    *,
+    max_tokens,
+    temperature,
+    reasoning_enabled,
+    api_key,
+    reasoning_disabled_by,
+    extra_body=None,
+):
     try:
         import openai
     except ImportError as exc:
@@ -18,22 +30,37 @@ def call(provider_name, base_url, api_id, messages, *, max_tokens, temperature, 
     kwargs = dict(
         model=api_id,
         messages=messages,
-        max_tokens=max_tokens,
         temperature=temperature,
     )
+    if provider_name == "openai":
+        # OpenAI's newer chat-completions models (the reasoning-capable
+        # families, including gpt-5.4-nano) reject `max_tokens` outright and
+        # require `max_completion_tokens` instead (confirmed live: gpt-5 -- the
+        # study model this replaced -- returned a 400 until this was fixed).
+        # DeepSeek and Together's OpenAI-compatible endpoints still use `max_tokens`.
+        kwargs["max_completion_tokens"] = max_tokens
+    else:
+        kwargs["max_tokens"] = max_tokens
+    if extra_body:
+        # Provider/model-specific fields with no place in the standard schema,
+        # e.g. Together's GLM-5.2 reasoning toggle (see together_provider.py).
+        kwargs["extra_body"] = extra_body
     if not reasoning_enabled and provider_name == "openai":
-        # Reasoning-capable OpenAI models expose `reasoning_effort`; pin it to
-        # "minimal" so reasoning stays off (or point config.py at a
-        # non-reasoning model, e.g. gpt-4o, if "minimal" isn't low enough).
-        kwargs["reasoning_effort"] = "minimal"
+        # gpt-5.4-nano (and the newer reasoning-capable OpenAI family generally)
+        # expose `reasoning_effort`; "none" genuinely disables reasoning, unlike
+        # "minimal", which was tried first and still consumed an entire response
+        # budget on reasoning_tokens with zero visible output (verified against
+        # a live gpt-5 preflight call before this model was replaced).
+        kwargs["reasoning_effort"] = "none"
     elif reasoning_enabled and provider_name != "openai":
         # DeepSeek and Together have no reasoning_effort-style toggle here:
-        # DeepSeek is disabled by choosing the deepseek-chat model id rather
-        # than deepseek-reasoner, and Together by choosing a non-reasoning
-        # model. Neither can be turned *on* through this adapter, so fail
-        # loudly instead of silently ignoring the request.
+        # each is disabled either by model choice or by an extra_body field the
+        # specific provider module computes (see reasoning_disabled_by_for() in
+        # together_provider.py and deepseek_provider.py). Neither can be turned
+        # *on* through this adapter, so fail loudly instead of silently
+        # ignoring the request.
         raise ProviderError(
-            f"{provider_name} adapter has no reasoning toggle; reasoning must stay disabled via model choice",
+            f"{provider_name} adapter has no reasoning toggle; reasoning must stay disabled",
             retryable=False,
         )
 
@@ -66,4 +93,5 @@ def call(provider_name, base_url, api_id, messages, *, max_tokens, temperature, 
         output_tokens=usage.completion_tokens if usage else None,
         reasoning_tokens=reasoning_tokens,
         latency_ms=latency_ms,
+        reasoning_disabled_by=reasoning_disabled_by,
     )

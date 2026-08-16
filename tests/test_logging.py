@@ -63,6 +63,7 @@ class FakeProvider:
                 output_tokens=max_tokens,
                 reasoning_tokens=None,
                 latency_ms=1,
+                reasoning_disabled_by="api_parameter",
             )
 
         return ProviderResponse(
@@ -72,6 +73,7 @@ class FakeProvider:
             output_tokens=10 + level * 5,
             reasoning_tokens=7 if marker in self.leak_for else None,
             latency_ms=1,
+            reasoning_disabled_by="api_parameter",
         )
 
 

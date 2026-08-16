@@ -13,4 +13,6 @@ def call(api_id, messages, *, max_tokens, temperature, reasoning_enabled, api_ke
         temperature=temperature,
         reasoning_enabled=reasoning_enabled,
         api_key=api_key,
+        # Same checkpoint; reasoning_effort is a request-time toggle.
+        reasoning_disabled_by="api_parameter",
     )

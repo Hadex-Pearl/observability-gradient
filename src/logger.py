@@ -22,6 +22,7 @@ SCHEMA_FIELDS = [
     "input_tokens",
     "output_tokens",
     "reasoning_tokens",
+    "reasoning_disabled_by",
     "max_tokens_set",
     "reasoning_enabled",
     "temperature",

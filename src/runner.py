@@ -221,6 +221,7 @@ class RunHarness:
             "input_tokens": None,
             "output_tokens": None,
             "reasoning_tokens": None,
+            "reasoning_disabled_by": None,
             "max_tokens_set": max_tokens,
             "reasoning_enabled": reasoning_enabled,
             "temperature": temperature,
@@ -241,6 +242,7 @@ class RunHarness:
         row["input_tokens"] = result.input_tokens
         row["output_tokens"] = result.output_tokens
         row["reasoning_tokens"] = result.reasoning_tokens
+        row["reasoning_disabled_by"] = result.reasoning_disabled_by
         row["latency_ms"] = result.latency_ms
         self.logger.append(row)
         self.completed.add(key)

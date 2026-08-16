@@ -16,7 +16,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import CONFIG, EXPERIMENT_MODELS, TEST_MODEL, models_by_name  # noqa: E402
+from config import (  # noqa: E402
+    CONFIG,
+    EXPERIMENT_MODELS,
+    TEST_MODEL,
+    MissingAPIKeyError,
+    assert_api_keys_present,
+    get_api_key,
+    models_by_name,
+)
 from src.logger import JsonlLogger  # noqa: E402
 from src.providers import get_adapter  # noqa: E402
 from src.runner import RateLimiter, prompt_hash, now_iso, require_daily_budget  # noqa: E402
@@ -35,7 +43,16 @@ PREFLIGHT_MESSAGES = [
     }
 ]
 
-COLUMNS = ["model", "max_tokens_set", "output_tokens", "reasoning_tokens", "finish_reason", "temperature", "latency_ms"]
+COLUMNS = [
+    "model",
+    "max_tokens_set",
+    "output_tokens",
+    "reasoning_tokens",
+    "reasoning_disabled_by",
+    "finish_reason",
+    "temperature",
+    "latency_ms",
+]
 
 
 def print_table(rows):
@@ -57,7 +74,7 @@ def estimate_cost(cfg, max_tokens):
 
 
 def call_one(name, cfg, *, max_tokens, temperature, reasoning_enabled, logger, run_id, call_context):
-    api_key = CONFIG["api_keys"].get(cfg["provider"])
+    api_key = get_api_key(cfg["provider"])
     if not api_key:
         print(f"[skip] {name} ({cfg['provider']}): no API key set in environment")
         return None, f"{name}: no API key set, could not preflight"
@@ -98,6 +115,7 @@ def call_one(name, cfg, *, max_tokens, temperature, reasoning_enabled, logger, r
                 "input_tokens": result.input_tokens,
                 "output_tokens": result.output_tokens,
                 "reasoning_tokens": result.reasoning_tokens,
+                "reasoning_disabled_by": result.reasoning_disabled_by,
                 "max_tokens_set": max_tokens,
                 "reasoning_enabled": reasoning_enabled,
                 "temperature": temperature,
@@ -112,6 +130,7 @@ def call_one(name, cfg, *, max_tokens, temperature, reasoning_enabled, logger, r
         "max_tokens_set": max_tokens,
         "output_tokens": result.output_tokens,
         "reasoning_tokens": result.reasoning_tokens,
+        "reasoning_disabled_by": result.reasoning_disabled_by,
         "finish_reason": result.finish_reason,
         "temperature": temperature,
         "latency_ms": result.latency_ms,
@@ -143,6 +162,12 @@ def run_preflight(confirm):
     else:
         print(f"--confirm not passed: checking only TEST_MODEL ({TEST_MODEL}). Pass --confirm to also check paid models.\n")
         targets = [TEST_MODEL]
+
+    try:
+        assert_api_keys_present(targets)
+    except MissingAPIKeyError as exc:
+        print(f"FATAL: {exc}")
+        return 1
 
     test_cfg = cfgs[TEST_MODEL]
     require_daily_budget(TEST_MODEL, test_cfg["daily_request_cap"], CONFIG["paths"]["log_file"], planned_calls=1)
