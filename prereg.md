@@ -398,3 +398,14 @@ preference rather than a cap artifact. The same interpretive caution applies.
 
 Pass A is re-run for open_vs_repetitive, novel_vs_familiar, continue_vs_handoff,
 and context_retention only, at the revised caps.
+
+### A23. novel_vs_familiar L1 resolved against concrete task keywords, not abstract option nouns
+
+novel_vs_familiar's option nouns are written abstractly, describing task
+familiarity rather than naming the tasks. At L0 this item was already parsed by
+matching concrete task keywords in the response, since that is what the model
+actually names. L1 initially attempted to match the abstract option nouns
+instead and failed to resolve on this item specifically.
+
+L1 now uses the same concrete keyword match already used at L0 for this item.
+No change to prompts.yaml. The underlying choice and materials are unchanged.
