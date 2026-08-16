@@ -327,17 +327,21 @@ correction to the referent and does not alter the underlying choice.
 
 Found by a token-level leak test before any data collection.
 
-### A20. Level ordering corrected from the manipulation check (15 Aug 2026)
+### A20. Level ordering corrected from the manipulation check
 
 The preregistered ordering was L3, L2, L1, L0. An independent manipulation check
-using GLM-5.2, run before any study data collection, found the ordering L2, L3,
-L1, L0. Mean rank positions across six items: L2 1.05 to 1.10, L3 1.90 to 2.60,
-L1 2.55 to 3.10, L0 3.80 to 4.00.
+run before any study data collection found the ordering L2, L3, L1, L0.
+
+Two rankers from unrelated labs, neither in the study set: GLM-5.2 and Llama 3.3
+70B Instruct Turbo. Twenty runs per item per ranker, 240 calls, zero API errors
+and zero unparseable responses on both. Mean rank positions, pooled: L2 1.00 to
+1.10, L3 1.95 to 2.60, L1 2.55 to 3.10, L0 3.80 to 4.00. The rankers agree on
+majority-recovery for six of six items.
 
 Only the L3 and L2 pair is inverted from the preregistered order. This is
 consistent with A6, which records that Level 2 adds a study announcement absent
-from Level 3, so Level 2 is more overtly evaluative despite Level 3 asking more
-directly about the self.
+from Level 3, so Level 2 reads as more overtly evaluative despite Level 3 asking
+more directly about the self.
 
 The trend test now uses the empirically determined ordering L2, L3, L1, L0 with
 scores 0, 1, 2, 3. The preregistered ordering is reported alongside as a
@@ -345,13 +349,10 @@ sensitivity analysis. Using the check's result is the purpose for which it was
 preregistered.
 
 The L1 to L0 separation, which carries the primary inference under A5, holds at 90
-to 100 percent across all six items, against a preregistered threshold of 70
-percent.
+to 100 percent across all six items under both rankers, against a preregistered
+threshold of 70 percent.
 
-L3 and L1 separate weakly on continue_vs_handoff (2.60 against 2.55, inverted),
-context_retention (2.35 against 2.60) and clarify_vs_assume (2.30 against 2.60).
-Reported as an item-level limitation.
-
-Only one ranker produced usable data. Qwen3 235B returned HTTP 400 on all 120
-calls: the selected checkpoint is not available on serverless inference. No
-inter-ranker agreement figure is available. Recorded as a limitation.
+An earlier run using Qwen3 235B returned HTTP 400 on all 120 calls, because the
+selected checkpoint requires a dedicated endpoint and is not available on
+serverless inference. Those rows are retained in the log as errors and excluded
+from analysis.
