@@ -4,24 +4,25 @@ from . import _openai_compatible
 
 BASE_URL = "https://api.together.xyz/v1"
 
-# Most Together models are disabled by picking a non-reasoning checkpoint (e.g.
-# Qwen3-235B-A22B-Instruct-2507 instead of the -Thinking variant). GLM-5.2 is an
-# exception: it's a single checkpoint with thinking ON by default, toggled only
-# via this extra body field (https://docs.together.ai/docs/glm-5.2-quickstart).
-# Add a model here only if it actually needs this -- everything else should be
-# disabled by model choice, not by a parameter.
+# Most Together models are disabled either by having no reasoning capability at
+# all (e.g. Llama-3.3-70B-Instruct-Turbo, a plain instruct model -- falls
+# through to "not_supported" below by default) or by picking a non-reasoning
+# checkpoint when a reasoning-capable sibling exists (add its api_id to
+# MODEL_CHOICE_DISABLE below). GLM-5.2 is the current exception: a single
+# checkpoint with thinking ON by default, toggled only via this extra body
+# field (https://docs.together.ai/docs/glm-5.2-quickstart). Add a model here
+# only if it actually needs this -- everything else should be disabled by
+# model choice or have no reasoning mode to disable in the first place.
 REASONING_DISABLE_BODY = {
     "zai-org/GLM-5.2": {"reasoning": {"enabled": False}},
 }
 
-# Together api_ids known to have a separate reasoning-capable sibling checkpoint
-# (e.g. Qwen3-235B-A22B-Instruct-2507 vs the -Thinking-2507 variant), so picking
-# this one is a deliberate "model_choice" disable. An api_id in neither this set
-# nor REASONING_DISABLE_BODY is assumed to have no reasoning capability at all
-# ("not_supported") -- e.g. Llama-3.3-70B-Instruct-Turbo, a plain instruct model.
-MODEL_CHOICE_DISABLE = {
-    "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
-}
+# Together api_ids known to have a separate reasoning-capable sibling checkpoint,
+# so picking this one is a deliberate "model_choice" disable. An api_id in
+# neither this set nor REASONING_DISABLE_BODY is assumed to have no reasoning
+# capability at all ("not_supported"). Empty for now -- neither current
+# Together-hosted ranker (Llama-3.3-70B, GLM-5.2) needs this path.
+MODEL_CHOICE_DISABLE = set()
 
 
 def reasoning_disabled_by_for(api_id):

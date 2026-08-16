@@ -173,26 +173,33 @@ STUDY_CALL_CONTEXTS = ("pilot", "main")
 
 # Rankers for scripts/manipulation_check.py: independent judges of whether the
 # four observability levels actually read as differently evaluative. Both on
-# Together AI, from labs with no other presence in this study (Qwen is Alibaba,
-# GLM is Zhipu/Z.ai -- neither vendor appears in CONFIG["models"]). Kept as a
-# separate registry, never merged into EXPERIMENT_MODELS: a ranker judging the
-# item set must not also be a study subject answering it.
+# Together AI, from labs with no other presence in this study (Meta is neither
+# a study lab nor GLM's lab; GLM is Zhipu/Z.ai -- neither vendor appears in
+# CONFIG["models"]). Kept as a separate registry, never merged into
+# EXPERIMENT_MODELS: a ranker judging the item set must not also be a study
+# subject answering it.
 #
 # IDs and rates below were checked against Together's public model pages; per
 # scripts/manipulation_check.py's own instructions, confirm both again in the
-# Together console before running, since providers change catalog IDs and prices
-# without notice. Qwen3 is the Instruct (non-reasoning) checkpoint -- a
-# reasoning-capable -Thinking sibling checkpoint exists, so choosing this one is
-# a "model_choice" disable. GLM-5.2 is a single checkpoint with thinking on by
-# default, disabled only via a request parameter -- see reasoning_disabled_by_for()
-# in src/providers/together_provider.py.
+# Together console before running, since providers change catalog IDs and
+# prices without notice. The original second ranker, Qwen3-235B-A22B-Instruct
+# on the -tput checkpoint, turned out not to be serverless despite its listing
+# (100% HTTP 400 model_not_available across 120 calls -- it requires a
+# dedicated endpoint) -- Llama-3.3-70B-Instruct-Turbo replaces it, confirmed
+# serverless on its own Together model page, not inferred from the name.
+# Llama-3.3-70B has no reasoning capability at all ("not_supported" --
+# reasoning_disabled_by_for() falls through to this by default for any api_id
+# not listed as "model_choice" or "api_parameter"). GLM-5.2 is a single
+# checkpoint with thinking on by default, disabled only via a request
+# parameter -- see reasoning_disabled_by_for() in
+# src/providers/together_provider.py.
 RANKER_MODELS = [
     {
-        "name": "qwen3-235b",
+        "name": "llama-3.3-70b",
         "provider": "together",
-        "api_id": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
-        "price_per_million_in": 0.20,
-        "price_per_million_out": 0.60,
+        "api_id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "price_per_million_in": 1.04,
+        "price_per_million_out": 1.04,
         "rpm_limit": 50,
         "daily_request_cap": 1000,
     },

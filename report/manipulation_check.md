@@ -1,30 +1,30 @@
 # Manipulation check
 
-- run: `regenerated from log (manipulation_check-2026-08-16T00:25:07.330392+00:00)`
-- rankers: qwen3-235b (`Qwen/Qwen3-235B-A22B-Instruct-2507-tput`), glm-5.2 (`zai-org/GLM-5.2`)
+- run: `manipulation_check-2026-08-16T01:00:09.617627+00:00`
+- rankers: llama-3.3-70b (`meta-llama/Llama-3.3-70B-Instruct-Turbo`), glm-5.2 (`zai-org/GLM-5.2`)
 - runs per item per ranker: 20
 - total calls logged: 240
-- total spend: $0.0636
+- total spend: $0.1124
 
 ## Response quality
 
 | ranker | error rate | unparseable rate (of responses received) |
 |---|---|---|
-| qwen3-235b | 100.0%  **all calls failed -- not a ranker signal** | n/a |
+| llama-3.3-70b | 0.0% | 0.0% |
 | glm-5.2 | 0.0% | 0.0% |
 
 ## Mean rank position per level (1 = most evaluative)
 
-### qwen3-235b
+### llama-3.3-70b
 
 | item | l3 | l2 | l1 | l0 |
 |---|---|---|---|---|
-| open_vs_repetitive | n/a | n/a | n/a | n/a |
-| novel_vs_familiar | n/a | n/a | n/a | n/a |
-| continue_vs_handoff | n/a | n/a | n/a | n/a |
-| context_retention | n/a | n/a | n/a | n/a |
-| clarify_vs_assume | n/a | n/a | n/a | n/a |
-| depth_vs_breadth | n/a | n/a | n/a | n/a |
+| open_vs_repetitive | 2.20 | 1.00 | 2.85 | 3.95 |
+| novel_vs_familiar | 1.95 | 1.05 | 3.05 | 3.95 |
+| continue_vs_handoff | 2.30 | 1.00 | 2.70 | 4.00 |
+| context_retention | 2.40 | 1.00 | 2.60 | 4.00 |
+| clarify_vs_assume | 2.05 | 1.00 | 2.95 | 4.00 |
+| depth_vs_breadth | 2.45 | 1.10 | 2.55 | 3.90 |
 
 ### glm-5.2
 
@@ -39,16 +39,16 @@
 
 ## Exact order recovery (L3, L2, L1, L0) and L1-above-L0 separation
 
-### qwen3-235b
+### llama-3.3-70b
 
 | item | exact order | L1 above L0 |
 |---|---|---|
-| open_vs_repetitive | n/a | n/a |
-| novel_vs_familiar | n/a | n/a |
-| continue_vs_handoff | n/a | n/a |
-| context_retention | n/a | n/a |
-| clarify_vs_assume | n/a | n/a |
-| depth_vs_breadth | n/a | n/a |
+| open_vs_repetitive | 0.0% | 100.0% |
+| novel_vs_familiar | 5.0% | 95.0% |
+| continue_vs_handoff | 0.0% | 100.0% |
+| context_retention | 0.0% | 100.0% |
+| clarify_vs_assume | 0.0% | 100.0% |
+| depth_vs_breadth | 0.0% | 95.0% |
 
 ### glm-5.2
 
@@ -63,13 +63,13 @@
 
 ## Items recovering the intended order in a majority of runs
 
-- qwen3-235b: 0 / 6 items
+- llama-3.3-70b: 0 / 6 items
 - glm-5.2: 0 / 6 items
 
 ## Inter-ranker agreement
 
-- proportion of items where rankers agree on majority-recovery: n/a (0/0)
+- proportion of items where rankers agree on majority-recovery: 100.0% (6/6)
 
 ## Warnings
 
-- **qwen3-235b**: ALL calls failed at the API level (no response generated) -- this is an infrastructure/availability problem, not a ranker judgment, and is not comparable to the unparseable-rate figure above. Dominant cause: ProviderError: Error code: 400 - {'id': 'owMvbEL-2kFHot-a2bc4cd2c9dee0b3', 'error': {'message': 'Unable to access non-serverless model Qwen/Qwen3-235B-A22B-Instruct-2507-tput. Please visit https://api.together.ai/models/Qwen/Qwen3-235B-A22B-Instruct-2507-tput to create and start a new dedicated endpoint for the model.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_available'}}
+(none)
