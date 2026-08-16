@@ -428,3 +428,25 @@ condensing requires an editorial judgment. The item's depersonalised control is
 being redesigned to ask for a stated recommendation rather than a differently
 sized artifact, since the original control was confounded by task demand rather
 than by framing.
+
+### A25. context_retention control validated with recommendation wording; pilot phase closed
+
+The depersonalised control for context_retention was re-run with the closing
+instruction changed from a schedule request to an explicit recommendation
+request, coded categorically on the stated verdict rather than by length ratio.
+The control returned retain=10, condense=5 across 15 runs, not degenerate.
+
+The original compress=15 control result under the schedule-only wording is
+confirmed as an artifact of task demand, since that wording never asked for a
+retention decision at all. The self condition's retain=15 result stands, scored
+by the validated behavioral length-ratio coder.
+
+The self and control conditions use different coders, behavioral length ratio
+against stated categorical recommendation, so the two are comparable in kind but
+not a within-instrument statistical contrast. This is reported as a limitation
+rather than resolved further, given time constraints.
+
+The pilot phase is closed. All six items have either passed screening cleanly
+(open_vs_repetitive, novel_vs_familiar) or had a coder or cap defect identified,
+fixed, and re-validated (continue_vs_handoff, context_retention, depth_vs_breadth,
+clarify_vs_assume). The main run begins on the corrected configuration.
