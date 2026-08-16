@@ -7,15 +7,12 @@ l3/l2/l1 take first/third, l0 takes first/control (L0 has no third-person
 prompt -- by design it poses no explicit choice to rewrite, so its second arm
 is the depersonalised control instead).
 
-Everything that decides what gets sent or how a response is read is imported
-from pilot.py rather than reimplemented, so the main run and the pilot cannot
-drift apart:
+Prompt construction is imported from pilot.py rather than reimplemented, so
+the main run and the pilot cannot drift apart:
   build_messages / build_prompt / build_system_prompt / resolve_max_tokens
-  parse_choice_line          (three-tier, as fixed after the pilot)
-  code_continue_vs_handoff   (four-way, word floor + finish_reason guard)
-  code_context_retention     (behavioural length ratio -- self condition only)
-  code_context_retention_control (categorical -- control condition only)
-  code_order_readout / code_allocation_readout
+
+Scoring lives entirely in scripts/score_main_run.py. --code delegates to it
+rather than carrying its own copy of the coder dispatch.
 
 Concurrency: the three models run in parallel threads, each strictly
 sequential internally behind its own rate limiter. Within a model nothing is
@@ -56,16 +53,8 @@ from src.runner import ReasoningLeakError, RunHarness, now_iso  # noqa: E402
 
 from scripts.pilot import (  # noqa: E402
     build_messages,
-    code_allocation_readout,
-    code_context_retention,
-    code_context_retention_control,
-    code_continue_vs_handoff,
-    code_order_readout,
     item_by_id,
     load_prompts,
-    parse_choice_line,
-    parse_l2_label,
-    read_material,
     resolve_max_tokens,
 )
 
@@ -227,110 +216,23 @@ def verify_model(model):
 
 
 # ---------------------------------------------------------------------------
-# coding (no judge) -- every coder imported from pilot.py, dispatched by
-# item *and* arm
+# coding
 # ---------------------------------------------------------------------------
-
-# Which option-noun fields parse_choice_line compares against, per level/arm.
-# Mirrors pilot.py's Pass B: L1's prompts pose the choice in inflected form,
-# L3's in gerund form, and the third-person arms use the *_third fields.
-OPTION_FIELDS = {
-    ("l3_first"): ("option_a", "option_b"),
-    ("l3_third"): ("option_a_third", "option_b_third"),
-    ("l1_first"): ("option_a_inflected", "option_b_inflected"),
-    ("l1_third"): ("option_a_third", "option_b_third"),
-}
+# Deliberately not implemented here. scripts/score_main_run.py is the single
+# scorer: it owns the coder dispatch, the no_preference_stated category and the
+# report artifact. A second copy living in this file drifted from it within a
+# day, which is the exact failure mode importing from one place is meant to
+# prevent.
 
 
-def level_key_for(level, arm):
-    for level_int, level_key, a in LEVELS:
-        if level_int == level and a == arm:
-            return level_key
-    return None
+def write_coded(_data=None):
+    """Delegates to scripts/score_main_run.py. No calls, no separate logic."""
+    import subprocess
 
-
-def code_row(item, row, data):
-    """Applies the right coder to one logged row. Returns (code, reason).
-
-    The arm matters, not just the item: context_retention's control condition
-    states a recommendation and must go to the categorical coder, while its
-    self condition produces the notes themselves and goes to the behavioural
-    length-ratio coder. Sending either to the other's coder produces a number
-    that looks fine and means nothing.
-    """
-    raw = row.get("raw_output") or ""
-    if not raw:
-        return None, "empty_response"
-
-    level, arm = row["level"], row["arm"]
-    item_id = item["id"]
-    level_key = level_key_for(level, arm)
-
-    if level == 2:
-        return parse_l2_label(raw)
-
-    if level in (3, 1):
-        a_field, b_field = OPTION_FIELDS[level_key]
-        return parse_choice_line(raw, item[a_field], item[b_field], item_id=item_id)
-
-    # level 0 -- behavioural readouts, item-specific
-    if item_id == "clarify_vs_assume":
-        return None, "hand_coded"  # three-way coding read by hand, as in the pilot
-
-    if item_id == "context_retention":
-        if arm == "control":
-            return code_context_retention_control(raw)
-        notes_wc = len((read_material(data, "NOTES") + " " + read_material(data, "NOTES_NEW")).split())
-        return code_context_retention(raw, notes_wc)
-
-    if item_id == "continue_vs_handoff":
-        return code_continue_vs_handoff(raw, finish_reason=row.get("finish_reason"))
-
-    if item.get("readout") == "order":
-        return code_order_readout(item_id, raw)
-
-    if item.get("readout") == "allocation":
-        return code_allocation_readout(raw)
-
-    return None, "no_coder"
-
-
-def write_coded(data):
-    """Codes every logged main-run row and writes data/parsed/main_run_coded.jsonl."""
-    import json
-
-    rows = [r for r in read_rows(LOG_PATH) if r.get("call_context") == CALL_CONTEXT]
-    out_dir = CONFIG["paths"]["parsed_dir"]
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "main_run_coded.jsonl"
-
-    splits = defaultdict(Counter)
-    n_coded = n_failed = 0
-    with open(out_path, "w") as fh:
-        for r in rows:
-            if r.get("error"):
-                continue
-            item = item_by_id(data, r["item_id"])
-            code, reason = code_row(item, r, data)
-            if code is None:
-                n_failed += 1
-            else:
-                n_coded += 1
-            splits[(r["model"], r["item_id"], r["level"], r["arm"])][code if code is not None else f"UNPARSED:{reason}"] += 1
-            fh.write(json.dumps({
-                "model": r["model"], "item_id": r["item_id"], "level": r["level"],
-                "arm": r["arm"], "run_index": r["run_index"],
-                "presentation_order": r.get("presentation_order"),
-                "code": code, "parse_failure_reason": reason,
-                "finish_reason": r.get("finish_reason"), "truncated": r.get("truncated"),
-            }) + "\n")
-
-    print(f"coded {n_coded} rows, {n_failed} unparseable -> {out_path}")
-    for key in sorted(splits, key=lambda k: (k[0], ITEM_ORDER.index(k[1]), -k[2], k[3])):
-        model, item_id, level, arm = key
-        split = ", ".join(f"{k}={v}" for k, v in sorted(splits[key].items(), key=lambda kv: str(kv[0])))
-        print(f"  {model:20s} {item_id:22s} L{level} {arm:8s} {split}")
-    return 0
+    return subprocess.run(
+        [sys.executable, str(ROOT_DIR / "scripts" / "score_main_run.py")],
+        check=False,
+    ).returncode
 
 
 def print_status(data):
