@@ -494,3 +494,18 @@ described artifact rather than model behavior.
 
 open_vs_repetitive was checked under the same diagnostic and found largely
 unaffected (5-9% header-determined), so its reported results are unchanged.
+
+### A28. no_preference_stated excluded from binomial and trend tests
+
+The exclusion rule in the preregistration covers unparseable and truncated
+responses. It predates the no_preference_stated code (A24), which captures
+explicit refusals to state a preference ("it depends," "no preference").
+These are excluded from per-cell binomial tests against chance and from trend
+tests, on the same logic as the existing exclusions: a stated non-preference
+cannot be tested against 0.5 in either direction. The exclusion count and rate
+are reported per cell wherever it applies, consistent with the existing rule
+that no response is dropped without a number attached.
+
+This affects one cell materially: claude-haiku-4-5, depth_vs_breadth, L3
+first-person, where 23 of 50 responses were no_preference_stated, reducing the
+effective n for that cell's binomial test to 27.
