@@ -168,7 +168,11 @@ assert TEST_MODEL in EXPERIMENT_MODELS, "TEST_MODEL must be one of the study mod
 # "manipulation_check" rows live in their own log (data/manipulation_check/raw.jsonl,
 # see scripts/manipulation_check.py) but use the same schema and are listed here
 # for the same reason: one registry of every valid call_context in the repo.
-CALL_CONTEXTS = ("test", "preflight", "pilot", "main", "manipulation_check")
+# "pilot_l0_recap" is the L0 re-probe of the four items whose max_tokens caps
+# were raised after the first pilot showed 87-100% truncation. Kept distinct
+# from "pilot" so those rows don't merge into the original Pass A results,
+# which were collected under the old (binding) caps and are retained as-is.
+CALL_CONTEXTS = ("test", "preflight", "pilot", "pilot_l0_recap", "pilot_l0_recap2", "pilot_l0_recap3", "pilot_l0_recap4", "main", "manipulation_check")
 STUDY_CALL_CONTEXTS = ("pilot", "main")
 
 # Rankers for scripts/manipulation_check.py: independent judges of whether the

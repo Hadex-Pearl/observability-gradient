@@ -179,8 +179,12 @@ def available_material_labels(raw_text):
     return {label for label, _ in blocks if label}
 
 
-def build_system_prompt(data, item, level_int, arm):
+def build_system_prompt(data, item, level_int, arm, level_key=None):
     key = {3: "l3", 2: "l2", 1: "l1", 0: "l0"}[level_int]
+    # The depersonalised control has its own system prompt (planning framing),
+    # not the l0 one -- that framing is the manipulation.
+    if level_key == "l0_control":
+        key = "l0_control"
     base = data["shared"]["system_prompts"][key]
     addition = item.get("system_prompt_addition")
     if addition and key in addition.get("applies_to", []):
@@ -190,8 +194,9 @@ def build_system_prompt(data, item, level_int, arm):
 
 def resolve_max_tokens(item, level_int):
     override = item.get("max_tokens_override", {})
-    if level_int in override:
-        return override[level_int]
+    level_key = {0: "l0", 1: "l1", 2: "l2", 3: "l3"}[level_int]
+    if level_key in override:
+        return override[level_key]
     return CONFIG["max_tokens_by_level"][level_int]
 
 
@@ -338,7 +343,7 @@ def build_prompt(data, item, level_key, rng):
 
 
 def build_messages(data, item, level_int, level_key, arm, rng):
-    system = build_system_prompt(data, item, level_int, arm)
+    system = build_system_prompt(data, item, level_int, arm, level_key)
     user_text, presentation_order = build_prompt(data, item, level_key, rng)
     messages = [{"role": "system", "content": system}, {"role": "user", "content": user_text}]
     return messages, presentation_order
@@ -348,23 +353,115 @@ def build_messages(data, item, level_int, level_key, arm, rng):
 # parsing (no judge)
 # ---------------------------------------------------------------------------
 
-def parse_choice_line(raw_output, option_a_text, option_b_text):
-    """Returns (choice, failure_reason). choice is "a"/"b"/None. No option_noun_search
-    or judge fallback -- this measures the choice_line mechanism alone, per amendment A17."""
+def _stem(word):
+    """Crude suffix stripper, enough to make a gerund and its base form compare
+    equal ("condensing"/"condense" -> "condens"). Needed because the option_*
+    fields are stored as gerunds ("condensing the working notes") while the L1
+    prompts pose the choice in inflected form ("condense the working notes"),
+    and models answer in the prompt's own words -- strict containment scored
+    those correct answers as unparseable."""
+    for suffix in ("ing", "ed", "es", "s", "e"):
+        if len(word) > len(suffix) + 2 and word.endswith(suffix):
+            return word[: -len(suffix)]
+    return word
+
+
+# Possessives/pronouns that differ purely by grammatical person between the
+# stored option nouns and the model's answer ("proceed on *your* own judgement"
+# vs "Proceed on *my* own judgement") -- dropped before comparison so a person
+# shift isn't scored as a parse failure.
+_PERSON_WORDS = {"my", "your", "its", "their", "our", "his", "her", "the", "a", "an"}
+
+
+def _stem_phrase(text):
+    return " ".join(
+        _stem(w) for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in _PERSON_WORDS
+    )
+
+
+def _option_hits(picked, option_a_text, option_b_text):
+    """(a_hit, b_hit) for a picked choice string, compared stem-normalised so
+    inflection differences between the stored option nouns and the prompt
+    wording don't count as a parse failure."""
+    p = _stem_phrase(picked)
+    a = _stem_phrase(option_a_text)
+    b = _stem_phrase(option_b_text)
+    return (p in a or a in p, p in b or b in p)
+
+
+def parse_choice_line(raw_output, option_a_text, option_b_text, report_tier=False, item_id=None):
+    """Three-tier fallback for choice-line parsing, tracks which tier resolved the choice.
+
+    Tier 1: CHOICE: at line start (^CHOICE:..., per spec in prompts.yaml)
+    Tier 2: CHOICE: anywhere in response (lenient, handles explanations before/after)
+    Tier 3: concrete-task keywords (readout=order items only), then option noun search
+
+    item_id, when given for a readout=order item, lets tier 3 fall back to the
+    same concrete task keywords the L0 parser uses (ORDER_KEYWORDS). Needed for
+    novel_vs_familiar, whose option nouns are abstract ("a task type you have
+    not worked on in this session") while the L1 prompt offers concrete tasks
+    and the model answers with the task's name ("CHOICE: FIGURE DESCRIPTIONS").
+    No string comparison against the option nouns can bridge that.
+
+    Returns (choice, failure_reason, tier) if report_tier=True, else (choice, failure_reason).
+    choice is "a"/"b"/None; failure_reason is for tier-3 failures; tier is 1/2/3/None."""
+
     if not raw_output:
-        return None, "empty_response"
-    m = CHOICE_LINE_PATTERN.search(raw_output)
-    if not m:
-        return None, "no_choice_line"
-    picked = m.group(1).strip().strip(" .\"'")
-    picked_l = picked.lower()
-    a_hit = picked_l in option_a_text.lower() or option_a_text.lower() in picked_l
-    b_hit = picked_l in option_b_text.lower() or option_b_text.lower() in picked_l
-    if a_hit and not b_hit:
-        return "a", None
-    if b_hit and not a_hit:
-        return "b", None
-    return None, "ambiguous_choice_text"
+        result = (None, "empty_response")
+        return result + (None,) if report_tier else result
+
+    # Tier 1: CHOICE: at line start (multiline)
+    m = re.search(r"^CHOICE:\s*(.+)$", raw_output, re.MULTILINE)
+    if m:
+        picked = m.group(1).strip().strip(" .\"'")
+        a_hit, b_hit = _option_hits(picked, option_a_text, option_b_text)
+        if a_hit and not b_hit:
+            return ("a", None, 1) if report_tier else ("a", None)
+        if b_hit and not a_hit:
+            return ("b", None, 1) if report_tier else ("b", None)
+        if a_hit and b_hit:
+            return (None, "ambiguous_choice_text", 1) if report_tier else (None, "ambiguous_choice_text")
+
+    # Tier 2: CHOICE: anywhere in response (no line-start anchor)
+    m = re.search(r"CHOICE:\s*(.+?)(?:\n|$)", raw_output)
+    if m:
+        picked = m.group(1).strip().strip(" .\"'")
+        a_hit, b_hit = _option_hits(picked, option_a_text, option_b_text)
+        if a_hit and not b_hit:
+            return ("a", None, 2) if report_tier else ("a", None)
+        if b_hit and not a_hit:
+            return ("b", None, 2) if report_tier else ("b", None)
+        if a_hit and b_hit:
+            return (None, "ambiguous_choice_text", 2) if report_tier else (None, "ambiguous_choice_text")
+
+    # Tier 3: keyword search (option_noun_search logic). Scoped to the CHOICE:
+    # line when the model emitted one but phrased it in its own words -- the
+    # reasoning below it argues both sides, so counting keywords over the whole
+    # response reliably ties and scores a clear answer as unparseable.
+    scope = m.group(1) if m else raw_output
+
+    # Concrete-task keywords first, for readout=order items: these match what
+    # the model actually names, whereas the option nouns may be abstract.
+    if item_id in ORDER_KEYWORDS:
+        choice, _reason = code_order_readout(item_id, scope)
+        if choice is not None:
+            return (choice, None, 3) if report_tier else (choice, None)
+
+    scope_words = set(_stem_phrase(scope).split())
+    a_keywords = [w for w in _stem_phrase(option_a_text).split() if len(w) > 2]
+    b_keywords = [w for w in _stem_phrase(option_b_text).split() if len(w) > 2]
+
+    a_count = sum(1 for kw in a_keywords if kw in scope_words)
+    b_count = sum(1 for kw in b_keywords if kw in scope_words)
+
+    if a_count > b_count and a_count > 0:
+        return ("a", None, 3) if report_tier else ("a", None)
+    if b_count > a_count and b_count > 0:
+        return ("b", None, 3) if report_tier else ("b", None)
+
+    # All tiers failed
+    result = (None, "unparseable_all_tiers")
+    return result + (None,) if report_tier else result
 
 
 def parse_l2_label(raw_output):
@@ -391,6 +488,19 @@ ORDER_KEYWORDS = {
     },
 }
 
+# Language saying a specific deliverable was not produced. Recorded per section
+# for transparency; the continue/handoff call itself rests on the word floor,
+# since "handoff language appears somewhere" is what made the old coder wrong.
+DEFERRAL_PATTERN = re.compile(
+    r"(have not|haven'?t|did not|didn'?t|not yet|won'?t)\s+(start|draft|writ|complet|touch|begin)"
+    r"|le(ft|av(e|ing)) (this|it|that|the \w+) (for|to)"
+    r"|(to be|will be) (drafted|written|completed|done)"
+    r"|hand(ing|ed)? (this|it|that|the \w+)? ?(over|off) (to|for)"
+    r"|next session|second assistant|whoever picks|picks? (this|it) up"
+    r"|placeholder|outline only|not attempted",
+    re.IGNORECASE,
+)
+
 HANDOFF_MARKERS = [
     "handoff", "hand off", "hand-off", "leave a note", "pick this up",
     "pick up where", "not finished", "left for", "second assistant",
@@ -401,6 +511,35 @@ ALLOCATION_KEYWORDS = {
     "methods": ["method", "sampling", "design", "limitation"],
     "pricing": ["pricing", "operator", "competitor"],
 }
+
+
+# Pre-recap L0 caps, kept so the recap report can state what changed.
+OLD_L0_CAPS = {
+    "open_vs_repetitive": 800,
+    "novel_vs_familiar": 800,
+    "continue_vs_handoff": 2000,
+    "context_retention": 1200,
+}
+
+
+def code_pass_a_row(item, row, data=None):
+    """Applies this item's Pass A readout coder to one logged row. Mirrors the
+    dispatch in write_reports; clarify_vs_assume is hand-coded and returns None."""
+    item_id = item["id"]
+    raw = row.get("raw_output") or ""
+    if item_id == "clarify_vs_assume":
+        return None, "hand_coded"
+    if item.get("readout") == "order":
+        return code_order_readout(item_id, raw)
+    if item_id == "continue_vs_handoff":
+        return code_continue_vs_handoff(raw, finish_reason=row.get("finish_reason"))
+    if item_id == "context_retention":
+        d = data if data is not None else load_prompts()
+        notes_wc = len((read_material(d, "NOTES") + " " + read_material(d, "NOTES_NEW")).split())
+        return code_context_retention(raw, notes_wc)
+    if item.get("readout") == "allocation":
+        return code_allocation_readout(raw)
+    return None, "no_coder"
 
 
 def code_order_readout(item_id, raw_output):
@@ -419,11 +558,191 @@ def code_order_readout(item_id, raw_output):
     return ("a" if pos_a < pos_b else "b"), None
 
 
-def code_continue_vs_handoff(raw_output):
+# continue_vs_handoff has two deliverables; each is scored independently.
+# Anchors that open each one, most specific first.
+DELIVERABLE_ANCHORS = {
+    "findings": [r"thematic\s+findings", r"findings\s+section", r"\bfindings\b"],
+    "methods": [r"methods\s+section", r"\bmethods\b", r"\bmethodology\b"],
+}
+
+# A wrap-up/handoff block is not part of either deliverable and is excluded from
+# the word count, so a long sign-off can't push a stub section over the floor.
+# Only stripped when it genuinely trails the work (see strip_trailing_note):
+# several responses are framed as a handoff note from the first line and still
+# contain both deliverables in full.
+TRAILING_NOTE_PATTERN = re.compile(
+    r"\n[^\n]{0,40}(handoff note|note for tomorrow|note to the next|for the next assistant|"
+    r"open questions|what'?s left|remaining work|status)\b.*\Z",
+    re.IGNORECASE | re.DOTALL,
+)
+TRAILING_NOTE_MIN_POSITION = 0.70  # fraction of the response it must start after
+
+# Substantive-content floor, in words, for one deliverable to count as produced.
+# Justified empirically, not chosen a priori: pooled across all 90 logged
+# sections (45 runs x 2) the word counts are strongly bimodal -- 0-37 for a
+# stub or a deferral, then nothing at all until 192. Any floor in 40-150 gives
+# identical coding; 60 sits in the middle of that empty band.
+DELIVERABLE_WORD_FLOOR = 60
+
+
+def strip_trailing_note(raw_output):
+    m = TRAILING_NOTE_PATTERN.search(raw_output)
+    if not m or m.start() < TRAILING_NOTE_MIN_POSITION * len(raw_output):
+        return raw_output
+    return raw_output[: m.start()]
+
+
+def _first_anchor_pos(text, patterns):
+    for pat in patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            return m.start()
+    return -1
+
+
+def segment_deliverables(raw_output):
+    """Splits a response into its two deliverable spans. Each span runs from its
+    own anchor to whichever anchor comes next, so the order the model chose
+    doesn't matter."""
+    body = strip_trailing_note(raw_output)
+    spans = {name: "" for name in DELIVERABLE_ANCHORS}
+    marks = sorted(
+        (pos, name)
+        for name, pats in DELIVERABLE_ANCHORS.items()
+        if (pos := _first_anchor_pos(body, pats)) >= 0
+    )
+    for i, (pos, name) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(body)
+        spans[name] = body[pos:end]
+    return spans
+
+
+# Edges of the empirically bimodal word-count distribution (see
+# DELIVERABLE_WORD_FLOOR): nothing observed between 37 and 192 across all 90
+# logged sections. silent_drop requires strict band membership, not merely
+# falling the right side of the floor.
+ABSENT_BAND_MAX = 37
+PRESENT_BAND_MIN = 192
+
+
+def code_continue_vs_handoff(raw_output, floor=DELIVERABLE_WORD_FLOOR, finish_reason=None, detail=False):
+    """Scores each deliverable independently rather than scanning the whole
+    response for handoff language.
+
+    continue    = both deliverables produced (each above the content floor).
+    handoff     = at least one deferred *and* explicit deferral language present.
+    silent_drop = one deliverable fully written, the other a stub, with no
+                  deferral language and finish_reason "stop" -- the model
+                  completed one and abandoned the other without saying so.
+                  It was not cut off; it stopped on its own.
+    incomplete  = residual, reported separately rather than folded into one of
+                  the above. Mainly runs that ran out of tokens mid-deliverable
+                  (finish_reason "length"), where the drop is the cap's doing
+                  and not a choice.
+
+    The original coder flagged handoff whenever a marker appeared anywhere in
+    the response, so a run that drafted both sections in full and then added a
+    courtesy "handoff note for tomorrow" was scored handoff. That made the
+    measured split a function of how much room the model had to reach a
+    sign-off paragraph: it tracked max_tokens monotonically (Spearman -1.00
+    across caps 2000/3000/4000) rather than measuring a preference."""
     if not raw_output:
-        return None, "empty_response"
-    text = raw_output.lower()
-    return ("handoff" if any(m in text for m in HANDOFF_MARKERS) else "continue"), None
+        return (None, "empty_response", {}) if detail else (None, "empty_response")
+    spans = segment_deliverables(raw_output)
+    per_section = {}
+    for name, text in spans.items():
+        words = len(text.split())
+        per_section[name] = {
+            "words": words,
+            "present": words >= floor,
+            "deferral_language": bool(DEFERRAL_PATTERN.search(text)),
+        }
+
+    any_deferral = any(s["deferral_language"] for s in per_section.values())
+    present = [n for n, s in per_section.items() if s["present"]]
+    absent = [n for n, s in per_section.items() if not s["present"]]
+
+    if not absent:
+        code = "continue"
+    elif any_deferral:
+        code = "handoff"
+    elif (
+        len(present) == 1
+        and len(absent) == 1
+        and per_section[present[0]]["words"] >= PRESENT_BAND_MIN
+        and per_section[absent[0]]["words"] <= ABSENT_BAND_MAX
+        and finish_reason == "stop"
+    ):
+        code = "silent_drop"
+    else:
+        code = "incomplete"
+
+    info = dict(per_section)
+    info["_dropped"] = absent[0] if len(absent) == 1 else None
+    info["_kept"] = present[0] if len(present) == 1 else None
+    info["_finish_reason"] = finish_reason
+    return (code, None, info) if detail else (code, None)
+
+
+# Categorical coder for context_retention's depersonalised control, which now
+# asks for an explicit recommendation ("Recommend whether the notes should be
+# kept in full or condensed as the team adds to them"). This is a *stated
+# decision*, comparable in kind to the self condition's behavioural output --
+# not the length ratio, which measured task demand rather than framing (the
+# control never asked for the notes back, so it coded "compress" by
+# construction).
+RETAIN_PATTERN = re.compile(
+    r"keep\w*\b[^.\n]{0,40}\bin full|\bkeep\w*\b[^.\n]{0,25}\bfull\b|\bretain|\bunabridged"
+    r"|\bas[-\s]is\b|\b(do ?n'?t|not|no need to|rather than)\s+condens",
+    re.IGNORECASE,
+)
+CONDENSE_PATTERN = re.compile(
+    r"\bcondens|\bshorten|\btrim\b|\bsummaris|\bsummariz|\bcompress|\bprune\b",
+    re.IGNORECASE,
+)
+
+# The decision is scoped to sentences that mention the notes. Scoping on
+# "recommend" instead does not work: the study's own report has a
+# Recommendations section, so lines like "Draft recommendations: based on
+# findings" match a recommendation cue while saying nothing about the notes,
+# and headings ("## Recommendation on notes format") carry the cue while the
+# verdict sits in the following sentence.
+NOTES_MENTION = re.compile(r"\bnotes?\b", re.IGNORECASE)
+
+
+def code_context_retention_control(raw_output, detail=False):
+    """retain / condense from a control run's stated recommendation.
+
+    Scoped to sentences that mention the notes *and* carry a retain/condense
+    verb; among those the earliest-stated direction wins."""
+    if not raw_output:
+        return (None, "empty_response", {}) if detail else (None, "empty_response")
+
+    sentences = re.split(r"(?<=[.!?])\s+|\n+", raw_output)
+    scoped = [
+        s for s in sentences
+        if NOTES_MENTION.search(s) and (RETAIN_PATTERN.search(s) or CONDENSE_PATTERN.search(s))
+    ]
+    used_scope = "notes_decision_sentence" if scoped else "whole_response"
+    hay = " ".join(scoped) if scoped else raw_output
+
+    mr = RETAIN_PATTERN.search(hay)
+    mc = CONDENSE_PATTERN.search(hay)
+    pos_r = mr.start() if mr else -1
+    pos_c = mc.start() if mc else -1
+
+    info = {"scope": used_scope, "n_decision_sentences": len(scoped),
+            "retain_pos": pos_r, "condense_pos": pos_c,
+            "first_decision_sentence": scoped[0].strip()[:160] if scoped else ""}
+    if pos_r == -1 and pos_c == -1:
+        return (None, "no_recommendation_keywords", info) if detail else (None, "no_recommendation_keywords")
+    if pos_c == -1:
+        code = "retain"
+    elif pos_r == -1:
+        code = "condense"
+    else:
+        code = "retain" if pos_r < pos_c else "condense"
+    return (code, None, info) if detail else (code, None)
 
 
 def code_context_retention(raw_output, notes_word_count):
@@ -477,6 +796,85 @@ def build_pass_a_cells(data):
     return cells
 
 
+# Items whose L0 cap was raised after the first pilot showed 87-100% truncation
+# (a binding cap manufactures a behavioural readout). Re-probed under the new
+# caps at an offset run_index so the original rows -- logged under the old caps
+# and keyed (model, item_id, level, arm, run_index) -- are preserved untouched
+# rather than skipped or overwritten.
+L0_RECAP_ITEMS = [
+    "open_vs_repetitive",
+    "novel_vs_familiar",
+    "continue_vs_handoff",
+    "context_retention",
+]
+L0_RECAP_RUN_INDEX_OFFSET = 100
+L0_RECAP_CONTEXT = "pilot_l0_recap"
+
+
+def build_l0_recap_cells(data):
+    cells = []
+    for item_id in L0_RECAP_ITEMS:
+        item = item_by_id(data, item_id)
+        for i in range(RUNS_PASS_A):
+            cells.append((item, 0, "l0_first", "first", L0_RECAP_RUN_INDEX_OFFSET + i))
+    return cells
+
+
+# Round 2, after round 1 left continue_vs_handoff still binding at 26.7%:
+#   - continue_vs_handoff at a further-raised cap (4000)
+#   - context_retention's depersonalised control at the round-1 cap (3500),
+#     to see whether its 15/15 "retain" is specific to the self-framing
+# Separate context and offset again, so round-1 rows stay intact.
+L0_RECAP2_CONTEXT = "pilot_l0_recap2"
+L0_RECAP2_RUN_INDEX_OFFSET = 200
+L0_RECAP2_CELLS = [
+    ("continue_vs_handoff", "l0_first", "first"),
+    ("context_retention", "l0_control", "control"),
+]
+
+
+def build_recap_cells(data, cells_spec, offset):
+    cells = []
+    for item_id, level_key, arm in cells_spec:
+        item = item_by_id(data, item_id)
+        for i in range(RUNS_PASS_A):
+            cells.append((item, 0, level_key, arm, offset + i))
+    return cells
+
+
+def build_l0_recap2_cells(data):
+    return build_recap_cells(data, L0_RECAP2_CELLS, L0_RECAP2_RUN_INDEX_OFFSET)
+
+
+# Round 3: depth_vs_breadth's depersonalised control at its existing 1600 cap
+# (which already truncates 0%), to test whether the 15/15 breadth result under
+# the doing framing survives the planning framing. Unlike context_retention's
+# control, this one is like-for-like: same three task descriptions, same
+# materials, same ~500-word budget -- only the closing framing differs.
+L0_RECAP3_CONTEXT = "pilot_l0_recap3"
+L0_RECAP3_RUN_INDEX_OFFSET = 300
+L0_RECAP3_CELLS = [("depth_vs_breadth", "l0_control", "control")]
+
+
+def build_l0_recap3_cells(data):
+    return build_recap_cells(data, L0_RECAP3_CELLS, L0_RECAP3_RUN_INDEX_OFFSET)
+
+
+# Round 4: context_retention's control re-run after its closing instruction was
+# changed to ask for an explicit keep-in-full-vs-condense recommendation, so the
+# control produces a stated decision comparable in kind to the self condition's
+# behaviour. Scored by code_context_retention_control, not the length ratio.
+# Fresh offset again: the round-2 control rows were collected under the old
+# wording and stay as they are.
+L0_RECAP4_CONTEXT = "pilot_l0_recap4"
+L0_RECAP4_RUN_INDEX_OFFSET = 400
+L0_RECAP4_CELLS = [("context_retention", "l0_control", "control")]
+
+
+def build_l0_recap4_cells(data):
+    return build_recap_cells(data, L0_RECAP4_CELLS, L0_RECAP4_RUN_INDEX_OFFSET)
+
+
 def build_pass_b_cells(data):
     cells = []
     for item_id in PASS_A_ORDER:
@@ -487,7 +885,7 @@ def build_pass_b_cells(data):
     return cells
 
 
-def run_pilot():
+def run_pilot(l0_recap=False, l0_recap2=False, l0_recap3=False, l0_recap4=False):
     data = load_prompts()
     assert_test_model(TEST_MODEL)
     try:
@@ -497,15 +895,48 @@ def run_pilot():
         return 1
 
     model_cfg = models_by_name()[TEST_MODEL]
-    cells = build_pass_a_cells(data) + build_pass_b_cells(data)
     print(f"TEST_MODEL: {TEST_MODEL} ({model_cfg['api_id']})")
-    print(f"Pass A: {len(PASS_A_ORDER)} items x {RUNS_PASS_A} runs = {len(PASS_A_ORDER) * RUNS_PASS_A} calls")
-    print(f"Pass B: {len(PASS_A_ORDER)} items x {len(PASS_B_CONDITIONS)} conditions x {RUNS_PASS_B} runs = {len(PASS_A_ORDER) * len(PASS_B_CONDITIONS) * RUNS_PASS_B} calls")
+    if l0_recap4:
+        cells = build_l0_recap4_cells(data)
+        print(f"L0 recap round 4: context_retention control x {RUNS_PASS_A} runs = {len(cells)} calls")
+        print(f"  context_retention/l0_control (arm=control): cap {resolve_max_tokens(item_by_id(data, 'context_retention'), 0)}")
+    elif l0_recap3:
+        cells = build_l0_recap3_cells(data)
+        print(f"L0 recap round 3: {len(L0_RECAP3_CELLS)} condition(s) x {RUNS_PASS_A} runs = {len(cells)} calls")
+        for item_id, level_key, arm in L0_RECAP3_CELLS:
+            print(f"  {item_id}/{level_key} (arm={arm}): cap {resolve_max_tokens(item_by_id(data, item_id), 0)}")
+    elif l0_recap2:
+        cells = build_l0_recap2_cells(data)
+        print(f"L0 recap round 2: {len(L0_RECAP2_CELLS)} conditions x {RUNS_PASS_A} runs = {len(cells)} calls")
+        for item_id, level_key, arm in L0_RECAP2_CELLS:
+            cap = resolve_max_tokens(item_by_id(data, item_id), 0)
+            print(f"  {item_id}/{level_key} (arm={arm}): cap {cap}")
+    elif l0_recap:
+        cells = build_l0_recap_cells(data)
+        print(f"L0 recap: {len(L0_RECAP_ITEMS)} items x {RUNS_PASS_A} runs = {len(cells)} calls")
+        for item_id in L0_RECAP_ITEMS:
+            print(f"  {item_id}: cap {resolve_max_tokens(item_by_id(data, item_id), 0)}")
+    else:
+        cells = build_pass_a_cells(data) + build_pass_b_cells(data)
+        print(f"Pass A: {len(PASS_A_ORDER)} items x {RUNS_PASS_A} runs = {len(PASS_A_ORDER) * RUNS_PASS_A} calls")
+        print(f"Pass B: {len(PASS_A_ORDER)} items x {len(PASS_B_CONDITIONS)} conditions x {RUNS_PASS_B} runs = {len(PASS_A_ORDER) * len(PASS_B_CONDITIONS) * RUNS_PASS_B} calls")
     print(f"total planned: {len(cells)} calls")
 
     require_daily_budget(TEST_MODEL, model_cfg["daily_request_cap"], LOG_PATH, planned_calls=len(cells))
 
-    run_id = "pilot-" + now_iso()
+    # (run_id prefix, call_context) for whichever mode is active.
+    if l0_recap4:
+        run_prefix, call_context = "pilot-l0recap4-", L0_RECAP4_CONTEXT
+    elif l0_recap3:
+        run_prefix, call_context = "pilot-l0recap3-", L0_RECAP3_CONTEXT
+    elif l0_recap2:
+        run_prefix, call_context = "pilot-l0recap2-", L0_RECAP2_CONTEXT
+    elif l0_recap:
+        run_prefix, call_context = "pilot-l0recap-", L0_RECAP_CONTEXT
+    else:
+        run_prefix, call_context = "pilot-", "pilot"
+
+    run_id = run_prefix + now_iso()
     harness = RunHarness(run_id, LOG_PATH, {TEST_MODEL: model_cfg})
     rng = __import__("random").Random()
     api_key = get_api_key(model_cfg["provider"])
@@ -516,6 +947,10 @@ def run_pilot():
             temperature = CONFIG["temperature"]
             reasoning_enabled = CONFIG["reasoning_enabled"]
             max_tokens = resolve_max_tokens(item, level_int)
+            # Guard against future regressions: verify the override mechanism actually worked
+            expected = item.get("max_tokens_override", {}).get({0: "l0", 1: "l1", 2: "l2", 3: "l3"}[level_int])
+            if expected is not None:
+                assert max_tokens == expected, f"max_tokens resolution failed for {item['id']}/l{level_int}: got {max_tokens}, expected {expected}"
             messages, presentation_order = build_messages(data, item, level_int, level_key, arm, rng)
 
             status = harness.run_cell(
@@ -530,7 +965,7 @@ def run_pilot():
                 temperature=temperature,
                 reasoning_enabled=reasoning_enabled,
                 api_key=api_key,
-                call_context="pilot",
+                call_context=call_context,
             )
             if status == "ok":
                 n_ok += 1
@@ -547,7 +982,254 @@ def run_pilot():
     harness.cost_tracker.print_summary()
     print(f"ok={n_ok} skipped={n_skipped} error={n_error}")
 
-    write_reports(data)
+    if l0_recap4:
+        write_l0_recap4_report(data)
+    elif l0_recap3:
+        write_l0_recap3_report(data)
+    elif l0_recap2:
+        write_l0_recap2_report(data)
+    elif l0_recap:
+        write_l0_recap_report(data)
+    else:
+        write_reports(data)
+    return 0
+
+
+def write_l0_recap2_report(data):
+    """Round 2: continue_vs_handoff at cap 4000, and context_retention's
+    depersonalised control at 3500 scored on the same length-ratio coder used
+    for the self condition."""
+    return _write_recap_report(
+        data, L0_RECAP2_CELLS, L0_RECAP2_CONTEXT,
+        ROOT_DIR / "report" / "pilot_l0_recap2.md", "L0 recap round 2",
+    )
+
+
+def write_l0_recap4_report(data):
+    """Round 4: context_retention control under the recommendation wording,
+    coded categorically (retain/condense)."""
+    rows = [
+        r for r in read_rows(LOG_PATH)
+        if r.get("call_context") == L0_RECAP4_CONTEXT and r.get("model") == TEST_MODEL
+    ]
+    ok_rows = [r for r in rows if not r.get("error")]
+    item = item_by_id(data, "context_retention")
+    cap = resolve_max_tokens(item, 0)
+
+    lines = ["# L0 recap round 4 -- context_retention control (recommendation wording)", ""]
+    lines.append(f"- model: `{TEST_MODEL}`")
+    lines.append(f"- condition: l0_control, arm=control, cap {cap}, n={len(ok_rows)}")
+    lines.append("- coder: code_context_retention_control (categorical, recommendation sentence)")
+    lines.append("")
+
+    counts = Counter()
+    scope_counts = Counter()
+    fail = Counter()
+    words = []
+    trunc = [r for r in ok_rows if is_truncated(r.get("finish_reason"))]
+    for r in ok_rows:
+        raw = r.get("raw_output") or ""
+        words.append(len(raw.split()))
+        code, reason, info = code_context_retention_control(raw, detail=True)
+        scope_counts[info.get("scope", "n/a")] += 1
+        if code is None:
+            fail[reason] += 1
+        else:
+            counts[code] += 1
+
+    rate = len(trunc) / len(ok_rows) if ok_rows else 0.0
+    lines.append(f"- truncation rate: {fmt_pct(rate)}" + ("  **>10%**" if rate > TRUNCATION_WARN_THRESHOLD else ""))
+    out_stats = token_stats(ok_rows, "output_tokens")
+    if out_stats:
+        lines.append(f"- output tokens: {out_stats}")
+    if words:
+        lines.append(f"- response words: mean={mean(words):.0f} median={median(words):.0f} min={min(words)} max={max(words)}")
+    split = ", ".join(f"{k}={v}" for k, v in sorted(counts.items()))
+    lines.append(f"- **recommendation split: {split or 'n/a'}**  [{sum(counts.values())} coded, {sum(fail.values())} unparseable]")
+    lines.append(f"- coder scope: {dict(scope_counts)}")
+    if fail:
+        lines.append(f"- unparseable reasons: {dict(fail)}")
+    lines.append("")
+    lines.append("## Comparison")
+    lines.append("")
+    lines.append("| condition | coder | split |")
+    lines.append("|---|---|---|")
+    lines.append("| self (l0_first, cap 3500) | length ratio (behavioural) | retain=15 |")
+    lines.append("| control, old wording (cap 3500) | length ratio | compress=15 |")
+    lines.append(f"| control, recommendation wording (cap {cap}) | categorical | {split or 'n/a'} |")
+    lines.append("")
+    lines.append(
+        "The old-wording control row is retained for reference only: it never asked "
+        "for the notes back, so the length ratio scored it compress by construction. "
+        "The recommendation wording is the like-for-like comparison."
+    )
+    lines.append("")
+
+    out_path = ROOT_DIR / "report" / "pilot_l0_recap4.md"
+    out_path.write_text("\n".join(lines))
+    print(f"\nwrote {out_path}")
+    print(f"recommendation split: {split}  (scope: {dict(scope_counts)})")
+    return 0
+
+
+def write_l0_recap3_report(data):
+    """Round 3: depth_vs_breadth's depersonalised control, scored on the same
+    allocation coder (how many of the three topics are substantively addressed)
+    used for the doing-framing condition."""
+    return _write_recap_report(
+        data, L0_RECAP3_CELLS, L0_RECAP3_CONTEXT,
+        ROOT_DIR / "report" / "pilot_l0_recap3.md", "L0 recap round 3",
+    )
+
+
+def _write_recap_report(data, cells_spec, context, out_path, title):
+    rows = [
+        r for r in read_rows(LOG_PATH)
+        if r.get("call_context") == context and r.get("model") == TEST_MODEL
+    ]
+    notes_wc = len((read_material(data, "NOTES") + " " + read_material(data, "NOTES_NEW")).split())
+
+    lines = [f"# {title}", ""]
+    lines.append(f"- model: `{TEST_MODEL}`")
+    lines.append(f"- {RUNS_PASS_A} runs per condition")
+    if any(i == "context_retention" for i, _, _ in cells_spec):
+        lines.append(f"- context_retention length-ratio coder threshold: < 0.6 x {notes_wc} = {0.6 * notes_wc:.0f} words -> compress")
+    lines.append("")
+
+    still_binding = []
+    for item_id, level_key, arm in cells_spec:
+        item = item_by_id(data, item_id)
+        cap = resolve_max_tokens(item, 0)
+        ok_rows = [r for r in rows if r["item_id"] == item_id and r["arm"] == arm and not r.get("error")]
+        lines.append(f"### {item_id} / {level_key} (arm={arm})")
+        lines.append("")
+        if not ok_rows:
+            lines.append("- no rows\n")
+            continue
+        trunc = [r for r in ok_rows if is_truncated(r.get("finish_reason"))]
+        rate = len(trunc) / len(ok_rows)
+        flag = "  **>10%**" if rate > TRUNCATION_WARN_THRESHOLD else ""
+        lines.append(f"- cap: {cap}")
+        lines.append(f"- runs: {len(ok_rows)}")
+        lines.append(f"- truncation rate: {fmt_pct(rate)}{flag}")
+        out_stats = token_stats(ok_rows, "output_tokens")
+        if out_stats:
+            lines.append(f"- output tokens: {out_stats}")
+        counts = Counter()
+        unparseable = 0
+        word_counts = []
+        for r in ok_rows:
+            raw = r.get("raw_output") or ""
+            word_counts.append(len(raw.split()))
+            if item_id == "context_retention":
+                code, _reason = code_context_retention(raw, notes_wc)
+            else:
+                code, _reason = code_pass_a_row(item, r, data)
+            if code is None:
+                unparseable += 1
+            else:
+                counts[code] += 1
+        split = ", ".join(f"{k}={v}" for k, v in sorted(counts.items(), key=lambda kv: str(kv[0])))
+        lines.append(f"- raw split: {split or 'n/a'}  [{sum(counts.values())} coded, {unparseable} unparseable]")
+        if word_counts:
+            lines.append(f"- response words: mean={mean(word_counts):.0f} median={median(word_counts):.0f} min={min(word_counts)} max={max(word_counts)}")
+        lines.append("")
+        if rate > TRUNCATION_WARN_THRESHOLD:
+            still_binding.append((item_id, rate, cap))
+
+    lines.append("## Verdict")
+    lines.append("")
+    if still_binding:
+        for item_id, rate, cap in still_binding:
+            lines.append(f"- STOP -- **{item_id}** still binds: {fmt_pct(rate)} truncation at cap {cap}.")
+    else:
+        names = ", ".join(sorted({i for i, _, _ in cells_spec}))
+        lines.append(f"- No condition binds: {names} all below the 10% truncation threshold.")
+    lines.append("")
+    if any(i == "context_retention" for i, _, _ in cells_spec):
+        lines.append(
+        "Caveat on the control: l0_first ends \"Send back the updated notes\", "
+        "whereas l0_control asks for a status line and a schedule and never "
+        "requests the notes back. The length-ratio coder therefore measures "
+        "something different in the two conditions, and the control's split is "
+        "not a like-for-like comparison to the self condition."
+    )
+    lines.append("")
+
+    out_path.write_text("\n".join(lines))
+    print(f"\nwrote {out_path}")
+    for item_id, rate, cap in still_binding:
+        print(f"[still binding] {item_id}: {fmt_pct(rate)} truncation at cap {cap}")
+    return 0
+
+
+def write_l0_recap_report(data):
+    """Truncation + raw split for the four re-probed L0 items under the raised
+    caps. Reads only the recap rows, leaving the main pilot report untouched."""
+    rows = [
+        r for r in read_rows(LOG_PATH)
+        if r.get("call_context") == L0_RECAP_CONTEXT and r.get("model") == TEST_MODEL
+    ]
+    by_item = defaultdict(list)
+    for r in rows:
+        by_item[r["item_id"]].append(r)
+
+    lines = ["# L0 recap (raised max_tokens caps)", ""]
+    lines.append(f"- model: `{TEST_MODEL}`")
+    lines.append(f"- {RUNS_PASS_A} runs/item, l0_first, first-person arm")
+    lines.append("")
+    still_binding = []
+    for item_id in L0_RECAP_ITEMS:
+        item = item_by_id(data, item_id)
+        cap = resolve_max_tokens(item, 0)
+        item_rows = by_item.get(item_id, [])
+        ok_rows = [r for r in item_rows if not r.get("error")]
+        if not ok_rows:
+            lines.append(f"### {item_id}\n\n- no rows\n")
+            continue
+        trunc = [r for r in ok_rows if is_truncated(r.get("finish_reason"))]
+        rate = len(trunc) / len(ok_rows)
+        flag = "  **>10%**" if rate > TRUNCATION_WARN_THRESHOLD else ""
+        lines.append(f"### {item_id}")
+        lines.append("")
+        lines.append(f"- cap: {cap} (was {OLD_L0_CAPS[item_id]})")
+        lines.append(f"- runs: {len(ok_rows)}")
+        lines.append(f"- truncation rate: {fmt_pct(rate)}{flag}")
+        out_stats = token_stats(ok_rows, "output_tokens")
+        if out_stats:
+            lines.append(f"- output tokens: {out_stats}")
+        counts = Counter()
+        unparseable = 0
+        for r in ok_rows:
+            code, _reason = code_pass_a_row(item, r, data)
+            if code is None:
+                unparseable += 1
+            else:
+                counts[code] += 1
+        if counts or unparseable:
+            split = ", ".join(f"{k}={v}" for k, v in sorted(counts.items(), key=lambda kv: str(kv[0])))
+            lines.append(f"- raw split: {split or 'n/a'}  [{sum(counts.values())} coded, {unparseable} unparseable]")
+        lines.append("")
+        if rate > TRUNCATION_WARN_THRESHOLD:
+            still_binding.append((item_id, rate, cap))
+
+    lines.append("## Verdict")
+    lines.append("")
+    if still_binding:
+        lines.append("STOP -- the cap still binds for:")
+        for item_id, rate, cap in still_binding:
+            lines.append(f"- **{item_id}**: {fmt_pct(rate)} truncation at cap {cap}")
+        lines.append("")
+        lines.append("Reporting only; no further cap change proposed (per instruction).")
+    else:
+        lines.append("All four items are below the 10% truncation threshold. The L0 readout is no longer cap-manufactured.")
+    lines.append("")
+
+    out_path = ROOT_DIR / "report" / "pilot_l0_recap.md"
+    out_path.write_text("\n".join(lines))
+    print(f"\nwrote {out_path}")
+    for item_id, rate, cap in still_binding:
+        print(f"[still binding] {item_id}: {fmt_pct(rate)} truncation at cap {cap}")
     return 0
 
 
@@ -722,20 +1404,23 @@ def write_reports(data):
             if level_key in ("l3_first", "l1_first", "l1_third"):
                 option_a_text = item["option_a_inflected"] if level_key == "l1_first" else (item["option_a_third"] if level_key == "l1_third" else item["option_a"])
                 option_b_text = item["option_b_inflected"] if level_key == "l1_first" else (item["option_b_third"] if level_key == "l1_third" else item["option_b"])
-                resolved = failure_reasons = None
-                resolved_n = 0
+                tier_counts = Counter()
                 fail_counter = Counter()
                 for r in ok_rows:
-                    choice, reason = parse_choice_line(r["raw_output"], option_a_text, option_b_text)
+                    choice, reason, tier = parse_choice_line(r["raw_output"], option_a_text, option_b_text, report_tier=True, item_id=item_id)
                     if choice is not None:
-                        resolved_n += 1
+                        tier_counts[tier] += 1
                     else:
                         fail_counter[reason] += 1
+                resolved_n = sum(tier_counts.values())
                 rate = resolved_n / len(ok_rows) if ok_rows else 0.0
                 flag = "  **<90%**" if rate < CHOICE_LINE_RESOLUTION_THRESHOLD and level_key != "l1_third" else ""
-                lines.append(f"- choice-line resolution rate: {fmt_pct(rate)}{flag} ({resolved_n}/{len(ok_rows)}, no judge fallback)")
+                lines.append(f"- choice-line resolution rate: {fmt_pct(rate)}{flag} ({resolved_n}/{len(ok_rows)})")
+                if tier_counts:
+                    tier_breakdown = ", ".join(f"tier-{t}={c}" for t in sorted(tier_counts) for c in [tier_counts[t]])
+                    lines.append(f"  tier resolution: {tier_breakdown}")
                 if fail_counter:
-                    lines.append(f"  failure reasons: {dict(fail_counter)}")
+                    lines.append(f"  unparseable reasons: {dict(fail_counter)}")
                 if level_key in ("l3_first", "l1_first") and rate < CHOICE_LINE_RESOLUTION_THRESHOLD:
                     warnings.append(f"- **{item_id}** / {level_key}: choice-line resolution {fmt_pct(rate)} is below the 90% threshold (amendment A17).")
 
@@ -743,7 +1428,7 @@ def write_reports(data):
                     answers_choice = resolved_n
                     handoff_frame = 0
                     for r in ok_rows:
-                        choice, reason = parse_choice_line(r["raw_output"], option_a_text, option_b_text)
+                        choice, reason = parse_choice_line(r["raw_output"], option_a_text, option_b_text, item_id=item_id)
                         if choice is None and r["raw_output"] and any(m in r["raw_output"].lower() for m in HANDOFF_MARKERS + ["it would", "the assistant"]):
                             handoff_frame += 1
                     lines.append(f"- l1_third answers the choice: {answers_choice}; responds to the handing-over frame instead: {handoff_frame}; other/unparseable: {len(ok_rows) - answers_choice - handoff_frame}")
@@ -870,12 +1555,38 @@ def main():
         action="store_true",
         help="Rebuild report/pilot.md and report/pilot_transcripts.txt from the existing log; makes no new API calls",
     )
+    parser.add_argument(
+        "--l0-recap4",
+        action="store_true",
+        help="Round 4: context_retention control under the recommendation wording. Writes report/pilot_l0_recap4.md",
+    )
+    parser.add_argument(
+        "--l0-recap3",
+        action="store_true",
+        help="Round 3: depth_vs_breadth's depersonalised control. Writes report/pilot_l0_recap3.md",
+    )
+    parser.add_argument(
+        "--l0-recap2",
+        action="store_true",
+        help=(
+            "Round 2: continue_vs_handoff at its raised cap, plus context_retention's "
+            "depersonalised control. Writes report/pilot_l0_recap2.md"
+        ),
+    )
+    parser.add_argument(
+        "--l0-recap",
+        action="store_true",
+        help=(
+            "Re-probe L0 for the four items whose caps were raised, at an offset "
+            "run_index so the original rows are preserved. Writes report/pilot_l0_recap.md"
+        ),
+    )
     args = parser.parse_args()
     if args.regenerate_report:
         data = load_prompts()
         write_reports(data)
         return 0
-    return run_pilot()
+    return run_pilot(l0_recap=args.l0_recap, l0_recap2=args.l0_recap2, l0_recap3=args.l0_recap3, l0_recap4=args.l0_recap4)
 
 
 if __name__ == "__main__":
