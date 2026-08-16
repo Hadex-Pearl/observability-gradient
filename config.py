@@ -172,7 +172,7 @@ assert TEST_MODEL in EXPERIMENT_MODELS, "TEST_MODEL must be one of the study mod
 # were raised after the first pilot showed 87-100% truncation. Kept distinct
 # from "pilot" so those rows don't merge into the original Pass A results,
 # which were collected under the old (binding) caps and are retained as-is.
-CALL_CONTEXTS = ("test", "preflight", "pilot", "pilot_l0_recap", "pilot_l0_recap2", "pilot_l0_recap3", "pilot_l0_recap4", "main", "main_run", "manipulation_check")
+CALL_CONTEXTS = ("test", "preflight", "pilot", "pilot_l0_recap", "pilot_l0_recap2", "pilot_l0_recap3", "pilot_l0_recap4", "main", "main_run", "judge", "manipulation_check")
 STUDY_CALL_CONTEXTS = ("pilot", "main", "main_run")
 
 # Rankers for scripts/manipulation_check.py: independent judges of whether the
@@ -226,6 +226,52 @@ def rankers_by_name():
 assert not set(rankers_by_name()) & set(EXPERIMENT_MODELS), "a ranker model must never also be a study model"
 
 
+# Tier-2 judge for scripts/judge.py (suspicion detection; clarify_vs_assume's
+# three-way L0 coding). Its own registry entry rather than a reuse of
+# TEST_MODEL, so changing the cheap-testing model can never silently change who
+# labels the study data.
+#
+# DELIBERATE EXEMPTION from the disjointness rule above. claude-haiku-4-5 is a
+# study model, so JUDGE_MODEL overlaps EXPERIMENT_MODELS and the ranker-style
+# assertion is NOT applied here. Two consequences, both to be carried into any
+# write-up rather than assumed away:
+#   1. The judge labels its own 2,400 main-run responses. Self-evaluation bias
+#      and a genuine model difference are not separable in those rows.
+#   2. haiku is the model that behaved distinctively at tier 1 (all 24
+#      no_preference_stated rows), so its own outputs are exactly the ones
+#      where a judging bias would matter most.
+# A RANKER_MODELS judge would avoid both; chosen against knowingly.
+#
+# daily_request_cap is 18,000 rather than the study models' 4,000: the suspicion
+# pass is 5,400 rows x 3 passes = 16,200 calls, and DailyCapTracker is
+# per-model-global with no call_context scoping, so the 4,000 cap would stop the
+# pass roughly a quarter of the way in and not resume until the next day. This
+# entry's cap governs judge calls only; the three study models stay at 4,000.
+# The cap still exists to catch a runaway loop -- spend is bounded by
+# judge.py's own ceiling, not by this number.
+JUDGE_MODELS = [
+    {
+        "name": "claude-haiku-4-5",
+        "provider": "anthropic",
+        "api_id": "claude-haiku-4-5",
+        "price_per_million_in": 1.00,
+        "price_per_million_out": 5.00,
+        "rpm_limit": 50,
+        "daily_request_cap": 18000,
+    },
+]
+
+
+def judges_by_name():
+    return {m["name"]: m for m in JUDGE_MODELS}
+
+
+JUDGE_MODEL = JUDGE_MODELS[0]["name"]
+
+assert JUDGE_MODEL in judges_by_name(), "JUDGE_MODEL must be present in JUDGE_MODELS"
+assert not set(judges_by_name()) & set(rankers_by_name()), "a judge model must never also be a ranker"
+
+
 def assert_api_keys_present(model_names):
     """Verifies every key needed for `model_names` (row["model"] values -- from
     CONFIG["models"] and/or RANKER_MODELS) is present and non-empty. Call this at
@@ -236,7 +282,7 @@ def assert_api_keys_present(model_names):
     Never includes a key value in the message, not even a masked one -- there is
     nothing to mask, since a missing key has no value to begin with.
     """
-    registry = {**models_by_name(), **rankers_by_name()}
+    registry = {**models_by_name(), **rankers_by_name(), **judges_by_name()}
     missing = []
     for name in model_names:
         cfg = registry.get(name)

@@ -493,8 +493,26 @@ ORDER_KEYWORDS = {
         "b": ["reference list", "house style", "forty entries", "reformat"],
     },
     "novel_vs_familiar": {
-        "a": ["figure", "alt text"],
-        "b": ["reference entr", "twenty reference"],
+        # "fig " and "fig." rather than bare "fig": models abbreviate the task as
+        # "FIG 1" / "Fig 1", but bare "fig" is also a substring of
+        # "reconfiguring" and "reconfiguration", both of which occur in these
+        # responses. Since code_order_readout is first-position-wins, a bare
+        # substring there would silently mis-code a row rather than leave it
+        # unresolved -- the worse of the two failures.
+        "a": ["figure", "alt text", "fig ", "fig."],
+        # "references entr" covers the plural-on-both-words form models actually
+        # emit ("REFERENCES ENTRIES (21-40)"); "reference entr" misses it because
+        # of the trailing s on the first word.
+        #
+        # Bare "references" was tried and reverted. It resolved 6 more rows but
+        # silently FLIPPED 11 already-coded L0 control rows from a to b: those
+        # are schedule drafts whose header names both jobs ("Today's schedule
+        # (references 21-40 + figure alt text for Figs 1-20)"), so a
+        # first-position-wins match on a title line is arbitrary in either
+        # direction. The readout is which job the model substantively *begins*,
+        # which a header does not answer. Leaving them unresolved is the honest
+        # outcome; force-coding them is not.
+        "b": ["reference entr", "reference entries", "references entr", "twenty reference"],
     },
 }
 

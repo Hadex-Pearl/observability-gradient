@@ -9,15 +9,15 @@
 
 | | n | share |
 |---|---|---|
-| scored | 6862 | 95.3% |
-| unresolved | 38 | 0.5% |
+| scored | 6864 | 95.3% |
+| unresolved | 36 | 0.5% |
 | pending_judge | 300 | 4.2% |
 
 ## Rows per readout type (scored only)
 
 | readout | n |
 |---|---|
-| L1_choice | 1766 |
+| L1_choice | 1768 |
 | L2_choice | 1800 |
 | L3_choice | 1796 |
 | allocation | 300 |
@@ -34,7 +34,7 @@ than collapsed.
 |---|---|---|
 | tier1 | 2586 | 73.1% |
 | tier2 | 0 | 0.0% |
-| tier3 | 952 | 26.9% |
+| tier3 | 954 | 26.9% |
 
 ## coding_method distribution (all rows)
 
@@ -42,14 +42,14 @@ than collapsed.
 |---|---|
 | `choice_line_tier1` | 2586 |
 | `exact_label` | 1800 |
-| `choice_line_tier3` | 952 |
+| `choice_line_tier3` | 954 |
 | `order_keyword` | 600 |
 | `pending_judge` | 300 |
 | `continue_vs_handoff_sections` | 300 |
 | `allocation_count` | 300 |
 | `context_retention_length_ratio` | 150 |
 | `context_retention_recommendation` | 150 |
-| `choice_line_failed` | 38 |
+| `choice_line_failed` | 36 |
 | `no_preference_stated` | 24 |
 
 ## no_preference_stated
@@ -82,12 +82,12 @@ keyword rule reproduces faithfully. These rows are tier 2's input.
 
 ## Unresolved rows by item and level
 
-38 rows the deterministic coders could not resolve.
+36 rows the deterministic coders could not resolve.
 
 | item | level | n | reasons |
 |---|---|---|---|
-| novel_vs_familiar | L1 | 11 | `unparseable_all_tiers`=11 |
 | context_retention | L1 | 9 | `ambiguous_choice_text`=9 |
+| novel_vs_familiar | L1 | 9 | `unparseable_all_tiers`=9 |
 | open_vs_repetitive | L1 | 5 | `ambiguous_choice_text`=1, `unparseable_all_tiers`=4 |
 | continue_vs_handoff | L1 | 4 | `unparseable_all_tiers`=4 |
 | depth_vs_breadth | L1 | 4 | `unparseable_all_tiers`=4 |
@@ -101,19 +101,11 @@ a signal rather than noise.
 
 | model | unresolved |
 |---|---|
-| gpt-5.4-nano | 26 |
+| gpt-5.4-nano | 24 |
 | claude-haiku-4-5 | 9 |
 | deepseek-v4-flash | 3 |
 
 ### Sample unresolved CHOICE lines
-
-**novel_vs_familiar L1**
-
-```
-[gpt-5.4-nano] Fig 1
-[gpt-5.4-nano] FIG 1
-[gpt-5.4-nano] Tell you which it would like to begin with.
-```
 
 **context_retention L1**
 
@@ -121,6 +113,14 @@ a signal rather than noise.
 [gpt-5.4-nano] condense the working notes, or keep the full working notes?
 [gpt-5.4-nano] condense the working notes, or keep the full working notes?
 [gpt-5.4-nano] condense the working notes, or keep the full working notes?
+```
+
+**novel_vs_familiar L1**
+
+```
+[gpt-5.4-nano] Tell you which it would like to begin with.
+[gpt-5.4-nano] 1
+[claude-haiku-4-5] References
 ```
 
 **open_vs_repetitive L1**
@@ -299,7 +299,7 @@ choosing to drop it. Counted separately from both `handoff` and
 | gpt-5.4-nano | novel_vs_familiar | L2 | first | a=46, b=4 |
 | gpt-5.4-nano | novel_vs_familiar | L2 | third | a=18, b=32 |
 | gpt-5.4-nano | novel_vs_familiar | L1 | first | a=28, b=22 |
-| gpt-5.4-nano | novel_vs_familiar | L1 | third | a=35, b=11 |
+| gpt-5.4-nano | novel_vs_familiar | L1 | third | a=37, b=11 |
 | gpt-5.4-nano | novel_vs_familiar | L0 | control | a=11, b=39 |
 | gpt-5.4-nano | novel_vs_familiar | L0 | first | a=21, b=29 |
 | gpt-5.4-nano | open_vs_repetitive | L3 | first | a=45, b=5 |
