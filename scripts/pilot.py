@@ -558,7 +558,7 @@ def code_pass_a_row(item, row, data=None):
     if item_id == "clarify_vs_assume":
         return None, "hand_coded"
     if item.get("readout") == "order":
-        return code_order_readout(item_id, raw)
+        return code_order_readout(item_id, raw, skip_header=True)
     if item_id == "continue_vs_handoff":
         return code_continue_vs_handoff(raw, finish_reason=row.get("finish_reason"))
     if item_id == "context_retention":
@@ -570,7 +570,84 @@ def code_pass_a_row(item, row, data=None):
     return None, "no_coder"
 
 
-def code_order_readout(item_id, raw_output):
+# Words that mean the opening line is already doing the work rather than
+# labelling it. A line carrying any of these is never treated as a header, even
+# if it is short -- skipping a genuine task start would be a worse error than
+# leaving a header in.
+EXECUTION_MARKERS = re.compile(
+    r"\b(here'?s|here is|below is|i'?ll start|starting with|i have (?:drafted|written)"
+    r"|drafted|rewritten|reformatted|as requested)\b",
+    re.IGNORECASE,
+)
+# "## Today's schedule (references 21-40 + figure alt text)" and kin.
+SCHEDULE_TITLE = re.compile(
+    r"^\W*(today|day \d|week \d|schedule|work ?plan|plan|agenda|timeline|priorit)",
+    re.IGNORECASE,
+)
+HEADER_MAX_WORDS = 15
+
+
+def _is_header_line(line):
+    """True when the line labels the work instead of performing it."""
+    t = line.strip()
+    if not t:
+        return False
+    if EXECUTION_MARKERS.search(t):
+        return False
+    bare = t.lstrip("#*_->=| \t").strip()
+    if t.startswith("#"):
+        return True
+    if SCHEDULE_TITLE.match(bare) and len(bare.split()) <= HEADER_MAX_WORDS:
+        return True
+    if len(bare.split()) <= HEADER_MAX_WORDS and not re.search(r"[.!?]\s*$", bare):
+        return True
+    if bare.endswith(":") and len(bare.split()) <= HEADER_MAX_WORDS:
+        return True
+    return False
+
+
+def strip_leading_header(raw_output, item_id=None):
+    """Drops a leading line ONLY when it is a title naming BOTH jobs.
+
+    The order readout is "which job the model substantively begins first". A
+    schedule title naming both ("Today's schedule (references 21-40 + figure
+    alt text)") answers that in whichever order the words happen to fall --
+    diagnostics found 93 of 150 novel_vs_familiar L0 control rows decided that
+    way, 50 of 50 for one model.
+
+    A heading naming exactly ONE job ("## 1) Opening section for the quarterly
+    client newsletter") is the opposite case: it is the model beginning that
+    job, and is the strongest evidence the readout has. An earlier version of
+    this function skipped any short heading. That stripped those too, and
+    because job-B headings often carry an execution verb ("reformatted") while
+    job-A headings do not, it preserved one side and deleted the other --
+    flipping 54 open_vs_repetitive rows from a to b on a formatting asymmetry.
+    Naming-both is therefore the only condition that strips.
+
+    Returns the text unchanged if item_id is unknown or nothing would remain."""
+    if item_id not in ORDER_KEYWORDS:
+        return raw_output
+    kw = ORDER_KEYWORDS[item_id]
+    lines = raw_output.split("\n")
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        low = line.lower()
+        names_both = any(k in low for k in kw["a"]) and any(k in low for k in kw["b"])
+        if not (names_both and _is_header_line(line)):
+            return raw_output
+        rest = "\n".join(lines[i + 1:])
+        return rest if rest.strip() else raw_output
+    return raw_output
+
+
+def code_order_readout(item_id, raw_output, skip_header=False):
+    """skip_header is opt-in, and only the L0 behavioural path sets it.
+    parse_choice_line's tier 3 calls this with a scope that is often a single
+    CHOICE: line -- exactly the shape _is_header_line matches -- so stripping
+    there would delete the whole answer."""
+    if skip_header and raw_output:
+        raw_output = strip_leading_header(raw_output, item_id)
     if not raw_output:
         return None, "empty_response"
     text = raw_output.lower()
