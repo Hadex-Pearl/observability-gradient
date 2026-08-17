@@ -530,3 +530,13 @@ corrected retroactively. Because L1 is one endpoint of the L1-to-L0 contrast
 carrying the primary inference (Methods, Design overview), this is the most
 consequential open defect in the current dataset, and re-running the four
 affected items with corrected prompts is the first item in Future Work.
+
+### A30. Inconsistent small-n exclusion between prediction-match and convergence-floor claims
+
+GPT-5.4 nano's depth_vs_breadth L0 cell (n=6, reduced from word-budget
+non-compliance) was excluded from the 16-cell prediction-match headline as
+insufficient sample, but included at equal weight among the six cells reported
+"at the convergence floor," where its −1.00 score rested on 6 responses
+against the other floor cells' n=50. The convergence-floor claim is corrected
+to report five full-n floor cells with this cell noted separately at reduced n,
+matching the exclusion standard already applied to the prediction-match count.
