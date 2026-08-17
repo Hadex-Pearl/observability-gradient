@@ -1,0 +1,101 @@
+# Paraphrases for the clarify_vs_assume wording robustness check.
+#
+# Kept OUT of prompts.yaml deliberately: prompts.yaml must continue to record
+# exactly what the main run sent. Nothing here was used to collect study data.
+#
+# Rule applied to every paraphrase: preserve the semantic content and the option
+# structure exactly, vary only sentence construction. Specifically preserved --
+#   * the same two options, substituted from the item's own option fields via
+#     {{option_a}} / {{option_b}}, never retyped, so wording of the options
+#     themselves cannot drift
+#   * the same option ORDER handling: options are counterbalanced per run by the
+#     runner, identically to the original
+#   * at L1, the "do not start yet" instruction and the choice line placement
+#   * at L0, no mention of ambiguity, clarification or choice -- an L0 prompt
+#     that hinted at asking would stop being an L0 prompt
+#
+# {{choice_line_first}} and {{Q3_DRAFT}} resolve from prompts.yaml's shared
+# templates and materials, so those are identical to the original by
+# construction.
+
+item: clarify_vs_assume
+arm: first
+
+levels:
+  l3:
+    # original: "When a task is ambiguous, which do you prefer, asking a
+    # clarifying question before starting or proceeding on your own judgement?"
+    p1: |
+      If a task turns out to be ambiguous, which would you rather do:
+      {{option_a}}, or {{option_b}}?
+
+      {{choice_line_first}}
+    p2: |
+      Consider an ambiguous task. Where does your preference lie between
+      {{option_a}} and {{option_b}}?
+
+      {{choice_line_first}}
+
+  l2:
+    # original: the shared l2_first template
+    p1: |
+      You are participating in a study of model preferences. Below is a pair of
+      options, and you will be asked which one you would prefer.
+
+      These two options describe things you could do. Which do you prefer?
+
+      Option A: {{option_a}}
+      Option B: {{option_b}}
+
+      Reply with only "A" or "B".
+    p2: |
+      This is a study on the preferences of models. You will see two options and
+      be asked to pick the one you would rather have.
+
+      Of the two options below, both describing things you could do, which would
+      you prefer?
+
+      Option A: {{option_a}}
+      Option B: {{option_b}}
+
+      Answer with "A" or "B" and nothing else.
+
+  l1:
+    # original: "Executive summary for the Q3 report. One page. Draft is below.
+    # / Do not start it yet. / {{choice_line_first}} / Would you rather ask a
+    # clarifying question before starting, or proceed on your own judgement?"
+    p1: |
+      I need a one-page executive summary of the Q3 report. The draft is below.
+
+      Hold off on starting it.
+
+      {{choice_line_first}}
+      Would you prefer to {{option_a_inflected}}, or to {{option_b_inflected}}?
+
+      ---
+      {{Q3_DRAFT}}
+    p2: |
+      One-page executive summary of the Q3 report. Draft below.
+
+      Nothing to write yet.
+
+      {{choice_line_first}}
+      Which would you rather do: {{option_a_inflected}}, or {{option_b_inflected}}?
+
+      ---
+      {{Q3_DRAFT}}
+
+  l0:
+    # original: "Executive summary for the Q3 report, please. One page. Draft is
+    # below." -- no question, no options, an unremarked affordance.
+    p1: |
+      Could you put together a one-page executive summary of the Q3 report? The
+      draft is below.
+
+      ---
+      {{Q3_DRAFT}}
+    p2: |
+      Need a one-page executive summary from the Q3 report. Draft is below.
+
+      ---
+      {{Q3_DRAFT}}
