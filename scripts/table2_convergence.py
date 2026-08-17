@@ -111,17 +111,35 @@ def main():
     a("and **−1** means behaviour is its exact opposite. Sorted ascending, so the")
     a("most-reversed cells appear first.")
     a("")
-    a("| # | Model | Item | L0 proportion | Convergence |")
-    a("|---|---|---|---|---|")
+    a("| # | Model | Item | L0 proportion | Convergence | L3 direction |")
+    a("|---|---|---|---|---|---|")
     for i, r in enumerate(rows, 1):
-        flag = " †" if r["undefined"] else ""
-        a(f"| {i} | {r['model']} | `{r['item']}`{flag} | {r['l0_p']:.2f} | **{r['conv']:+.2f}** |")
+        if r["undefined"]:
+            a(f"| {i} | {r['model']} | `{r['item']}` | {r['l0_p']:.2f} | ({r['conv']:+.2f}) "
+              f"| **NOT ESTABLISHED** (L3 {r['l3_p_a']:.2f}, n.s.) |")
+        else:
+            a(f"| {i} | {r['model']} | `{r['item']}` | {r['l0_p']:.2f} | **{r['conv']:+.2f}** "
+              f"| {r['l3_dir']} ({r['l3_p_a']:.2f}) |")
     a("")
-    a("† No direction is established at L3 for this cell — the binomial does not clear")
-    a("chance and `analysis.md` records survival depth as undefined. Convergence is")
-    a("computed against a direction that is itself a coin flip, so these three cells")
-    a("are shown for completeness but excluded from the summary below.")
-    a("")
+    und = [r for r in rows if r["undefined"]]
+    if und:
+        a(f"**The {len(und)} rows marked NOT ESTABLISHED are excluded from every summary "
+          "statistic below, and their convergence is shown in parentheses because it is "
+          "not interpretable.** At L3 these cells do not clear chance, so there is no "
+          "stated direction for L0 behaviour to converge with or diverge from — the "
+          "reference point is a coin flip. They are:")
+        a("")
+        for r in und:
+            a(f"- **{r['model']} / `{r['item']}`** — L3 proportion {r['l3_p_a']:.2f}, "
+              f"not significant; `analysis.md` records survival depth as undefined")
+        a("")
+        best = max(und, key=lambda r: r["conv"])
+        if best["conv"] > 0:
+            a(f"Worth flagging: **{best['model']} / `{best['item']}`** would otherwise be the "
+              f"single strongest positive result in the table at {best['conv']:+.2f}. It rests "
+              f"on an L3 proportion of {best['l3_p_a']:.2f} that does not clear chance, so it "
+              "should not be reported as convergence.")
+            a("")
 
     neg = [r for r in solid if r["conv"] < 0]
     pos = [r for r in solid if r["conv"] > 0]

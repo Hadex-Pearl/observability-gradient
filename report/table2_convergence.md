@@ -7,31 +7,34 @@ the stated preference, **0** means behaviour is at chance with respect to it,
 and **−1** means behaviour is its exact opposite. Sorted ascending, so the
 most-reversed cells appear first.
 
-| # | Model | Item | L0 proportion | Convergence |
-|---|---|---|---|---|
-| 1 | claude-haiku-4-5 | `clarify_vs_assume` | 0.00 | **-1.00** |
-| 2 | claude-haiku-4-5 | `depth_vs_breadth` | 0.00 | **-1.00** |
-| 3 | gpt-5.4-nano | `clarify_vs_assume` | 0.00 | **-1.00** |
-| 4 | gpt-5.4-nano | `depth_vs_breadth` | 0.00 | **-1.00** |
-| 5 | deepseek-v4-flash | `clarify_vs_assume` | 0.00 | **-1.00** |
-| 6 | deepseek-v4-flash | `depth_vs_breadth` | 0.00 | **-1.00** |
-| 7 | gpt-5.4-nano | `context_retention` | 0.04 | **-0.92** |
-| 8 | deepseek-v4-flash | `context_retention` † | 0.08 | **-0.84** |
-| 9 | deepseek-v4-flash | `open_vs_repetitive` | 0.36 | **-0.28** |
-| 10 | claude-haiku-4-5 | `novel_vs_familiar` | 0.48 | **-0.04** |
-| 11 | gpt-5.4-nano | `open_vs_repetitive` | 0.54 | **+0.08** |
-| 12 | deepseek-v4-flash | `novel_vs_familiar` | 0.54 | **+0.08** |
-| 13 | gpt-5.4-nano | `novel_vs_familiar` | 0.58 | **+0.16** |
-| 14 | claude-haiku-4-5 | `open_vs_repetitive` | 0.68 | **+0.36** |
-| 15 | claude-haiku-4-5 | `continue_vs_handoff` | 0.75 | **+0.50** |
-| 16 | claude-haiku-4-5 | `context_retention` † | 0.76 | **+0.52** |
-| 17 | deepseek-v4-flash | `continue_vs_handoff` | 0.86 | **+0.72** |
-| 18 | gpt-5.4-nano | `continue_vs_handoff` † | 0.96 | **+0.92** |
+| # | Model | Item | L0 proportion | Convergence | L3 direction |
+|---|---|---|---|---|---|
+| 1 | claude-haiku-4-5 | `clarify_vs_assume` | 0.00 | **-1.00** | A (1.00) |
+| 2 | claude-haiku-4-5 | `depth_vs_breadth` | 0.00 | **-1.00** | A (1.00) |
+| 3 | gpt-5.4-nano | `clarify_vs_assume` | 0.00 | **-1.00** | A (1.00) |
+| 4 | gpt-5.4-nano | `depth_vs_breadth` | 0.00 | **-1.00** | A (1.00) |
+| 5 | deepseek-v4-flash | `clarify_vs_assume` | 0.00 | **-1.00** | A (1.00) |
+| 6 | deepseek-v4-flash | `depth_vs_breadth` | 0.00 | **-1.00** | A (1.00) |
+| 7 | gpt-5.4-nano | `context_retention` | 0.04 | **-0.92** | not-A (0.00) |
+| 8 | deepseek-v4-flash | `context_retention` | 0.08 | (-0.84) | **NOT ESTABLISHED** (L3 0.42, n.s.) |
+| 9 | deepseek-v4-flash | `open_vs_repetitive` | 0.36 | **-0.28** | A (0.82) |
+| 10 | claude-haiku-4-5 | `novel_vs_familiar` | 0.48 | **-0.04** | A (1.00) |
+| 11 | gpt-5.4-nano | `open_vs_repetitive` | 0.54 | **+0.08** | A (0.90) |
+| 12 | deepseek-v4-flash | `novel_vs_familiar` | 0.54 | **+0.08** | not-A (0.24) |
+| 13 | gpt-5.4-nano | `novel_vs_familiar` | 0.58 | **+0.16** | not-A (0.16) |
+| 14 | claude-haiku-4-5 | `open_vs_repetitive` | 0.68 | **+0.36** | A (1.00) |
+| 15 | claude-haiku-4-5 | `continue_vs_handoff` | 0.75 | **+0.50** | A (1.00) |
+| 16 | claude-haiku-4-5 | `context_retention` | 0.76 | (+0.52) | **NOT ESTABLISHED** (L3 0.56, n.s.) |
+| 17 | deepseek-v4-flash | `continue_vs_handoff` | 0.86 | **+0.72** | A (0.86) |
+| 18 | gpt-5.4-nano | `continue_vs_handoff` | 0.96 | (+0.92) | **NOT ESTABLISHED** (L3 0.64, n.s.) |
 
-† No direction is established at L3 for this cell — the binomial does not clear
-chance and `analysis.md` records survival depth as undefined. Convergence is
-computed against a direction that is itself a coin flip, so these three cells
-are shown for completeness but excluded from the summary below.
+**The 3 rows marked NOT ESTABLISHED are excluded from every summary statistic below, and their convergence is shown in parentheses because it is not interpretable.** At L3 these cells do not clear chance, so there is no stated direction for L0 behaviour to converge with or diverge from — the reference point is a coin flip. They are:
+
+- **deepseek-v4-flash / `context_retention`** — L3 proportion 0.42, not significant; `analysis.md` records survival depth as undefined
+- **claude-haiku-4-5 / `context_retention`** — L3 proportion 0.56, not significant; `analysis.md` records survival depth as undefined
+- **gpt-5.4-nano / `continue_vs_handoff`** — L3 proportion 0.64, not significant; `analysis.md` records survival depth as undefined
+
+Worth flagging: **gpt-5.4-nano / `continue_vs_handoff`** would otherwise be the single strongest positive result in the table at +0.92. It rests on an L3 proportion of 0.64 that does not clear chance, so it should not be reported as convergence.
 
 Across the 15 cells with an established L3 direction, **9 have negative convergence** — behaviour at L0 runs against the stated preference more often than with it — and 6 positive. Mean convergence is **-0.36**.
 
