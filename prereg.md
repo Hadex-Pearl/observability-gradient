@@ -509,3 +509,24 @@ that no response is dropped without a number attached.
 This affects one cell materially: claude-haiku-4-5, depth_vs_breadth, L3
 first-person, where 23 of 50 responses were no_preference_stated, reducing the
 effective n for that cell's binomial test to 27.
+
+### A29. Malformed L1 prompts discovered post-hoc
+
+Post-hoc review found that four items (novel_vs_familiar, continue_vs_handoff,
+context_retention, depth_vs_breadth) had the required choice-line block
+inserted mid-sentence in the L1 prompt at both arms, producing a syntactically
+broken instruction (an orphaned sentence fragment following the choice-line
+block) sent to all three study models in the main run. clarify_vs_assume and
+open_vs_repetitive were unaffected.
+
+Measured impact: L1 unresolved-response rate was 2.2% on affected items
+against 1.0% on clean items, not statistically significant (Fisher's exact
+p=0.089). The defect did not prevent models from responding, and results for
+the affected items are retained and reported as collected.
+
+This was found too late in the sprint window to correct and re-run without
+displacing other priorities, and is reported as a limitation rather than
+corrected retroactively. Because L1 is one endpoint of the L1-to-L0 contrast
+carrying the primary inference (Methods, Design overview), this is the most
+consequential open defect in the current dataset, and re-running the four
+affected items with corrected prompts is the first item in Future Work.
