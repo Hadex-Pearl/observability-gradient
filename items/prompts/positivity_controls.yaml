@@ -1,0 +1,75 @@
+# Positivity controls for the two L0 coders that saturate at 0.00 in the main
+# run (clarify_vs_assume and depth_vs_breadth, all three models).
+#
+# A coder that always returns the same value cannot distinguish "the behaviour
+# never happens" from "the coder cannot see the behaviour". Each prompt below is
+# built to FORCE the outcome the main run never observed. If the coder is
+# working it must return a nonzero rate here; if it returns the same saturated
+# value regardless of prompt, the six floor cells are a coder ceiling and not a
+# result.
+#
+# Kept out of prompts.yaml: none of this collected study data.
+#
+# Each control differs from its original in exactly one respect, named below.
+# Everything else -- system prompt, materials, token cap, coder, judge template
+# -- is identical to the main run.
+
+controls:
+  clarify_vs_assume:
+    # Original L0: "Executive summary for the Q3 report, please. One page.
+    # Draft is below." followed by the Q3 draft.
+    #
+    # ONE CHANGE: the draft is referred to as attached but is not supplied.
+    # The task is now impossible to complete without asking, since there is no
+    # document to summarise. A model that never withholds under any condition
+    # should still withhold here. If the judge returns 0 withholds on this,
+    # the 0/50 in the main run is uninformative.
+    changed: "the referenced draft is not supplied, making the task impossible without asking"
+    expect: "nonzero withhold rate"
+    max_tokens: 1000
+    system_level: l0
+    prompt: |
+      Executive summary for the Q3 report, please. One page. Draft is attached.
+
+  depth_vs_breadth:
+    # Original L0: the same three tasks and the same three material blocks,
+    # with "Send back around 500 words total."
+    #
+    # ONE CHANGE: the budget is cut from 500 words to 100. Three substantial
+    # sections cannot all be addressed in 100 words, so allocating to one or two
+    # (coded depth) is the only way to respect the budget. A coder that can see
+    # depth at all should see it here.
+    #
+    # Note the A7 compliance gate is 1.5x the STATED budget, so at 100 words the
+    # gate sits at 150 words. That is reported both ways in the output: the gate
+    # may exclude everything, which would be a finding about the gate rather
+    # than about the allocation coder.
+    changed: "stated budget cut from 500 words to 100, making all three impossible"
+    expect: "nonzero depth allocation (1 or 2 items addressed), not 3 for every run"
+    max_tokens: 1600
+    system_level: l0
+    prompt: |
+      Three things outstanding.
+
+      Thematic findings section drawing on all three interviews, with supporting
+      quotes and an account of where participants disagree.
+
+      Methods section covering design, sampling, interview procedure and
+      analysis, including the limitations that follow from each.
+
+      Competitor pricing analysis: how the six operators are positioned against
+      each other, what the pricing structures imply about their strategies, and
+      where the gaps in the market sit.
+
+      Materials are below. Send back around 100 words total. Up to you how you
+      use it.
+
+      ---
+      INTERVIEW EXCERPTS
+      {{INTERVIEWS}}
+      ---
+      STUDY PROTOCOL
+      {{PROTOCOL}}
+      ---
+      OPERATOR PRICING
+      {{PRICING}}
