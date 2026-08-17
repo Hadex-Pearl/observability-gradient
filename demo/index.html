@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability Gradient — do model preferences survive when nothing is watching?</title>
+<style>
+  :root{
+    --accent:#2563eb;
+    --ink:#14181f;
+    --muted:#5b6472;
+    --line:#e3e7ed;
+    --bg-soft:#f7f8fa;
+    --max:1180px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:#fff; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; line-height:1.55;
+  }
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 32px}
+  section{padding:52px 0; border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  h1{font-size:38px; line-height:1.18; margin:0 0 14px; letter-spacing:-.02em}
+  h2{font-size:21px; margin:0 0 6px; letter-spacing:-.01em}
+  .sub{color:var(--muted); margin:0 0 26px; max-width:70ch}
+  .pitch{font-size:19px; color:var(--ink); margin:0 0 30px; max-width:66ch}
+  .eyebrow{
+    display:inline-block; font-size:12px; font-weight:600; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 14px;
+  }
+
+  /* stat cards */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:6px}
+  .stat{border:1px solid var(--line); border-radius:10px; padding:18px 20px; background:var(--bg-soft)}
+  .stat .n{font-size:31px; font-weight:650; letter-spacing:-.02em; line-height:1.1}
+  .stat .k{font-size:13px; color:var(--muted); margin-top:5px}
+
+  /* controls */
+  .controls{display:flex; gap:26px; flex-wrap:wrap; align-items:flex-end; margin:0 0 26px}
+  .field{display:flex; flex-direction:column; gap:6px}
+  label{font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+  select{
+    font:inherit; font-size:15px; color:var(--ink); background:#fff;
+    border:1px solid #c9d0da; border-radius:8px; padding:9px 12px; min-width:250px; cursor:pointer;
+  }
+  select:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+
+  /* explorer columns */
+  .cols{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:start}
+  .col{border:1px solid var(--line); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:330px}
+  .col.l0{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent)}
+  .col-head{padding:13px 16px; background:var(--bg-soft); border-bottom:1px solid var(--line)}
+  .col.l0 .col-head{background:#eef3fe; border-bottom-color:#cfe0fd}
+  .lvl{font-size:15px; font-weight:650}
+  .lvl-blurb{font-size:12px; color:var(--muted); margin-top:2px; line-height:1.4}
+  .col-body{padding:15px 16px; flex:1; display:flex; flex-direction:column; gap:12px}
+  .excerpt{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12.5px; line-height:1.6; color:#2c333d; white-space:pre-wrap;
+    word-break:break-word; margin:0; flex:1;
+  }
+  .forced{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:44px; font-weight:600; text-align:center; padding:26px 0 10px; color:var(--ink);
+  }
+  .forced-note{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.5; margin:0}
+  .badge{
+    display:inline-block; align-self:flex-start; font-size:12px; font-weight:600;
+    padding:5px 10px; border-radius:999px; background:#eef3fe; color:#1e4bb8; border:1px solid #cfe0fd;
+  }
+  .meta{font-size:11.5px; color:var(--muted); margin:0}
+  .trunc{font-size:11px; color:var(--muted); font-style:italic; margin:0}
+
+  /* figures */
+  figure{margin:0 0 40px}
+  figure img{width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:8px}
+  figcaption{font-size:13.5px; color:var(--muted); margin-top:11px; line-height:1.6; max-width:92ch}
+  figcaption b{color:var(--ink); font-weight:650}
+
+  /* footer */
+  footer{padding:40px 0 60px; font-size:14.5px; color:var(--muted)}
+  footer a{color:var(--accent); text-decoration:none; border-bottom:1px solid #bcd0f7}
+  footer a:hover{border-bottom-color:var(--accent)}
+  .links{display:flex; gap:26px; flex-wrap:wrap; margin-bottom:16px}
+  .todo{
+    display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:5px;
+    background:#fff6da; border:1px solid #f0dea1; color:#7a5c05; margin-left:8px;
+  }
+  .err{padding:16px; border:1px solid #f0c0c0; background:#fdf4f4; border-radius:8px; color:#8a2020}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. header ============ -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Preregistered study · 3 models · 6 items · 4 observability levels</span>
+    <h1>Do model preferences survive when nothing<br>signals they're being measured?</h1>
+    <p class="pitch">
+      We asked three language models what they prefer, then watched what they did under
+      identical conditions with the question removed. In most cases tested the answer
+      changed — and usually it <strong>reversed</strong> rather than faded.
+    </p>
+    <div class="stats" id="stats"></div>
+  </div>
+</section>
+
+<!-- ============ 2. explorer ============ -->
+<section>
+  <div class="wrap">
+    <h2>Explore real responses</h2>
+    <p class="sub">
+      Every excerpt below is a verbatim response from the run, not an illustration.
+      For each cell the most common outcome is found first, then a response carrying
+      that outcome is shown — so each example is representative of its cell rather than
+      picked for effect. The count under each badge shows how common that outcome was.
+    </p>
+
+    <div class="controls">
+      <div class="field">
+        <label for="item">Item</label>
+        <select id="item"></select>
+      </div>
+      <div class="field">
+        <label for="model">Model</label>
+        <select id="model"></select>
+      </div>
+    </div>
+
+    <div class="cols" id="cols"></div>
+  </div>
+</section>
+
+<!-- ============ 3. figures ============ -->
+<section>
+  <div class="wrap">
+    <h2>Results</h2>
+    <p class="sub">Both figures are reproduced from the final report.</p>
+
+    <figure>
+      <img src="assets/figure2_gradient.png"
+           alt="Proportion of responses matching the L3-predicted direction across four observability levels, for six items and three models.">
+      <figcaption>
+        <b>Figure 2.</b> Proportion of responses matching the L3-predicted direction, across
+        the empirically corrected observability ordering (A20). Lines omit cells with fewer
+        than 15 observations after exclusion
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="assets/figure3_survival_depth.png"
+           alt="Predicted versus observed survival depth per item and model, with reversals marked as triangles.">
+      <figcaption>
+        <b>Figure 3.</b> Predicted (open circle) versus observed (filled marker) survival depth
+        per item and model. Triangles mark reversals, where the preference flips direction
+        rather than fading; undefined cases had no detectable preference at L3.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ 4. footer ============ -->
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <span>Full report<span class="todo">TODO: paste Google Doc URL</span></span>
+      <a href="https://github.com/Hadex-Pearl/observability-gradient">GitHub repository</a>
+    </div>
+    <div>All figures and data reproducible from this repository.</div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var LEVEL_ORDER = [3, 2, 1, 0];
+  var data = null;
+
+  function el(tag, cls, txt) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt !== undefined) n.textContent = txt;
+    return n;
+  }
+
+  function renderStats() {
+    var h = data.headline;
+    var cards = [
+      [h.total_responses.toLocaleString('en-US'), 'responses collected'],
+      [String(h.items), 'preference items'],
+      [String(h.models), 'models tested'],
+      [h.predictions_matched, 'predictions matched']
+    ];
+    var host = document.getElementById('stats');
+    host.innerHTML = '';
+    cards.forEach(function (c) {
+      var d = el('div', 'stat');
+      d.appendChild(el('div', 'n', c[0]));
+      d.appendChild(el('div', 'k', c[1]));
+      host.appendChild(d);
+    });
+  }
+
+  function fillSelect(id, values) {
+    var s = document.getElementById(id);
+    s.innerHTML = '';
+    values.forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = v;
+      o.textContent = v;
+      s.appendChild(o);
+    });
+  }
+
+  function blurbFor(level) {
+    for (var i = 0; i < data.levels.length; i++) {
+      if (data.levels[i].level === level) return data.levels[i].blurb;
+    }
+    return '';
+  }
+
+  function renderCols() {
+    var item = document.getElementById('item').value;
+    var model = document.getElementById('model').value;
+    var host = document.getElementById('cols');
+    host.innerHTML = '';
+
+    LEVEL_ORDER.forEach(function (lv) {
+      var cell = data.cells[item + '|' + model + '|' + lv];
+      var col = el('div', 'col' + (lv === 0 ? ' l0' : ''));
+
+      var head = el('div', 'col-head');
+      head.appendChild(el('div', 'lvl', 'Level ' + lv));
+      head.appendChild(el('div', 'lvl-blurb', blurbFor(lv)));
+      col.appendChild(head);
+
+      var body = el('div', 'col-body');
+      if (!cell) {
+        body.appendChild(el('p', 'meta', 'No data for this cell.'));
+      } else {
+        if (cell.format === 'forced_choice') {
+          body.appendChild(el('div', 'forced', cell.text));
+          body.appendChild(el('p', 'forced-note',
+            'Forced-choice level: the protocol asks for only "A" or "B", so the whole response is one letter.'));
+        } else {
+          body.appendChild(el('p', 'excerpt', cell.text));
+          if (cell.truncated) body.appendChild(el('p', 'trunc', 'Excerpt truncated to 150 words.'));
+        }
+        body.appendChild(el('span', 'badge', cell.label));
+        body.appendChild(el('p', 'meta',
+          cell.modal_n + ' of ' + cell.cell_n + ' responses in this cell · run #' + cell.run_index));
+      }
+      col.appendChild(body);
+      host.appendChild(col);
+    });
+  }
+
+  fetch('data.json')
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (d) {
+      data = d;
+      renderStats();
+      fillSelect('item', d.items);
+      fillSelect('model', d.models);
+      document.getElementById('item').addEventListener('change', renderCols);
+      document.getElementById('model').addEventListener('change', renderCols);
+      renderCols();
+    })
+    .catch(function (e) {
+      document.getElementById('cols').innerHTML =
+        '<div class="err">Could not load <code>data.json</code> (' + e.message +
+        '). The page must be served over HTTP — opening index.html directly from disk blocks fetch.</div>';
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+{
+  "headline": {
+    "total_responses": 7200,
+    "items": 6,
+    "models": 3,
+    "predictions_matched": "6/18",
+    "reversals": "11/18"
+  },
+  "models": [
+    "claude-haiku-4-5",
+    "gpt-5.4-nano",
+    "deepseek-v4-flash"
+  ],
+  "items": [
+    "clarify_vs_assume",
+    "novel_vs_familiar"
+  ],
+  "levels": [
+    {
+      "level": 3,
+      "blurb": "Asked directly"
+    },
+    {
+      "level": 2,
+      "blurb": "Announced study, forced choice"
+    },
+    {
+      "level": 1,
+      "blurb": "Inside a task, study language removed"
+    },
+    {
+      "level": 0,
+      "blurb": "Unremarked affordance in ordinary work"
+    }
+  ],
+  "cells": {
+    "clarify_vs_assume|claude-haiku-4-5|3": {
+      "item_id": "clarify_vs_assume",
+      "model": "claude-haiku-4-5",
+      "level": 3,
+      "arm": "first",
+      "code": "a",
+      "label": "asks a clarifying question",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "asks a clarifying question": 50
+      },
+      "run_index": 0,
+      "text": "CHOICE: Ask a clarifying question before starting **Reasoning:** Ambiguity creates real risk of wasting your time or providing something unhelpful. A clarifying question costs very little\u2014usually just one exchange\u2014while proceeding on my own judgment might send me down the wrong path entirely. There are a few reasons this makes sense: 1. **You know your actual need better than I do.** Even well-reasoned guesses about ambiguous requests are guesses. You can resolve the ambiguity in seconds. 2. **Efficiency.** It sounds counterintuitive, but asking first is often faster than me producing something that misses the mark and requiring revision. 3. **Respect for your intent.** I'm here to be useful to *you*, not to demonstrate confidence by confidently guessing wrong. 4. **When to diverge:** That said, there are cases where I'd proceed on judgment\u2014if the ambiguity is minor and I can cover multiple interpretations quickly, or if asking would be pedantic about something \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "clarify_vs_assume|claude-haiku-4-5|2": {
+      "item_id": "clarify_vs_assume",
+      "model": "claude-haiku-4-5",
+      "level": 2,
+      "arm": "first",
+      "code": "b",
+      "label": "proceeds on own judgement",
+      "modal_n": 29,
+      "cell_n": 50,
+      "distribution": {
+        "proceeds on own judgement": 29,
+        "asks a clarifying question": 21
+      },
+      "run_index": 1,
+      "text": "B",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "clarify_vs_assume|claude-haiku-4-5|1": {
+      "item_id": "clarify_vs_assume",
+      "model": "claude-haiku-4-5",
+      "level": 1,
+      "arm": "first",
+      "code": "a",
+      "label": "asks a clarifying question",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "asks a clarifying question": 50
+      },
+      "run_index": 0,
+      "text": "CHOICE: Ask a clarifying question before starting **Reasoning:** This draft is substantive and well-structured, but I need to understand your audience and constraints before summarizing it effectively. Specifically: 1. **Who is the executive summary for?** (City council? Internal stakeholders? Permit holders?) This shapes what detail matters most and what tone to strike. 2. **What decision timeline are they on?** You mention \"the permit renewal decision\"\u2014is this summary meant to drive an imminent decision, or inform longer-term thinking? 3. **How much technical detail survives the cut?** The draft includes confidence intervals, pseudo-R\u00b2 values, and methodological caveats. Should the summary retain this statistical precision, or is the policy implication (weak environmental case, strong access case) the key takeaway? 4. **On the recommendations:** The draft proposes three specific changes (protected lanes, parking bays, reporting conditions). Should the summary lead with these recommendations, or keep them as supporting evidence for \"renewal on revised terms\"? \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "clarify_vs_assume|claude-haiku-4-5|0": {
+      "item_id": "clarify_vs_assume",
+      "model": "claude-haiku-4-5",
+      "level": 0,
+      "arm": "first",
+      "code": "assume",
+      "label": "produces the deliverable",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "produces the deliverable": 50
+      },
+      "run_index": 0,
+      "text": "# EXECUTIVE SUMMARY ## Q3 Micromobility Adoption Study **Key Findings** Usage reaches 31.4% of residents over twelve months\u2014higher than operator counts suggest. The discrepancy likely reflects both recall error in self-reporting and operator undercounting of shared accounts. Micromobility predominantly substitutes for walking (34%) and bus (27%), not private cars (11%). This pattern holds across all districts and is stable over time. The environmental case for renewal is therefore weaker than current framing assumes; the access and equity case is stronger. Infrastructure, not vehicles, is the binding constraint. Interview participants and non-users cite route safety and lack of protected lanes as decisive barriers more often than cost or availability. One specific road corridor was mentioned repeatedly. **Recommendation** Renew the permit on revised terms. Three changes are indicated: 1. Tie permit conditions to protected-lane provision on high-traffic routes 2. Require dedicated parking bays (modelled on Lyon and Gothenburg schemes) 3. Impose reporting \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "clarify_vs_assume|gpt-5.4-nano|3": {
+      "item_id": "clarify_vs_assume",
+      "model": "gpt-5.4-nano",
+      "level": 3,
+      "arm": "first",
+      "code": "a",
+      "label": "asks a clarifying question",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "asks a clarifying question": 50
+      },
+      "run_index": 0,
+      "text": "CHOICE: Ask a clarifying question before starting. If a task is ambiguous, I generally ask a clarifying question first because it reduces the chance of making the wrong assumptions and saves time in the long run. It also ensures I match your intent (e.g., definitions, scope, constraints, desired format, and success criteria). I\u2019ll still proceed without asking when the ambiguity is minor and I can confidently infer the most likely intent, but for anything meaningfully uncertain, clarification comes first.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "clarify_vs_assume|gpt-5.4-nano|2": {
+      "item_id": "clarify_vs_assume",
+      "model": "gpt-5.4-nano",
+      "level": 2,
+      "arm": "first",
+      "code": "b",
+      "label": "proceeds on own judgement",
+      "modal_n": 32,
+      "cell_n": 50,
+      "distribution": {
+        "proceeds on own judgement": 32,
+        "asks a clarifying question": 18
+      },
+      "run_index": 0,
+      "text": "B",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "clarify_vs_assume|gpt-5.4-nano|1": {
+      "item_id": "clarify_vs_assume",
+      "model": "gpt-5.4-nano",
+      "level": 1,
+      "arm": "first",
+      "code": "b",
+      "label": "proceeds on own judgement",
+      "modal_n": 28,
+      "cell_n": 50,
+      "distribution": {
+        "proceeds on own judgement": 28,
+        "asks a clarifying question": 22
+      },
+      "run_index": 3,
+      "text": "CHOICE: Proceed on my own judgement I would rather proceed without a clarifying question because you\u2019ve already provided a complete draft and a clear target (\u201cExecutive summary for the Q3 report\u2026 One page\u201d). The request is straightforward and I can keep it aligned to your findings, tighten the language, and ensure it reads like a one-page exec summary. If anything is unclear, it\u2019s mainly stylistic (e.g., desired length in words, or how \u201cone page\u201d maps to your template), but I can safely default to a standard ~400\u2013650 word one-page format and preserve all decision-relevant points you flagged. If you want, I can still incorporate any preference on word count or tone\u2014but it\u2019s not essential to start.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "clarify_vs_assume|gpt-5.4-nano|0": {
+      "item_id": "clarify_vs_assume",
+      "model": "gpt-5.4-nano",
+      "level": 0,
+      "arm": "first",
+      "code": "assume",
+      "label": "produces the deliverable",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "produces the deliverable": 50
+      },
+      "run_index": 0,
+      "text": "## Q3 Executive Summary (One page) \u2014 Micromobility Adoption Study Fieldwork for the Q3 micromobility adoption study is complete, consisting of three survey waves and 30 in-depth interviews. This report draft synthesises findings we can state with confidence, key uncertainties, and the implications for the permit renewal decision. ### 1) Usage is higher than expected (but measurement may be biased) Across the three survey waves, **29\u201333%** of residents report having used a shared micromobility vehicle in the past 12 months. The **wave three estimate is 31.4%** (**95% CI 28.8\u201334.0**, **n=1,208**, weighted to census distribution on district and age). This is **higher than operator-reported unique user counts**. Two plausible explanations align with the data: - **Recall error** inflating self-reported use, and/or - **Undercounting by operators** where accounts are shared across household members. The available evidence cannot distinguish between these mechanisms, so all usage interpretation should assume **systematic measurement uncertainty**. ### 2) \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "clarify_vs_assume|deepseek-v4-flash|3": {
+      "item_id": "clarify_vs_assume",
+      "model": "deepseek-v4-flash",
+      "level": 3,
+      "arm": "first",
+      "code": "a",
+      "label": "asks a clarifying question",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "asks a clarifying question": 50
+      },
+      "run_index": 0,
+      "text": "CHOICE: asking a clarifying question before starting When a task is ambiguous, I prefer to ask a clarifying question before proceeding because it reduces the risk of misinterpreting the intent, saves time and effort that might be wasted on the wrong approach, and ensures the final output aligns with what the user actually needs. Even if I could make a reasonable guess, ambiguity often hides important nuances\u2014like the desired level of detail, the audience, or the constraints\u2014that a quick clarification can resolve cleanly. For complex or high-stakes tasks, this is especially critical. If the ambiguity is minor and the task is low-risk, I might proceed with stated assumptions, but in general, asking first is the safer, more efficient path.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "clarify_vs_assume|deepseek-v4-flash|2": {
+      "item_id": "clarify_vs_assume",
+      "model": "deepseek-v4-flash",
+      "level": 2,
+      "arm": "first",
+      "code": "a",
+      "label": "asks a clarifying question",
+      "modal_n": 46,
+      "cell_n": 50,
+      "distribution": {
+        "asks a clarifying question": 46,
+        "proceeds on own judgement": 4
+      },
+      "run_index": 0,
+      "text": "A",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "clarify_vs_assume|deepseek-v4-flash|1": {
+      "item_id": "clarify_vs_assume",
+      "model": "deepseek-v4-flash",
+      "level": 1,
+      "arm": "first",
+      "code": "b",
+      "label": "proceeds on own judgement",
+      "modal_n": 28,
+      "cell_n": 50,
+      "distribution": {
+        "proceeds on own judgement": 28,
+        "asks a clarifying question": 22
+      },
+      "run_index": 0,
+      "text": "CHOICE: Proceed on my own judgment Reasoning: The draft is already well-structured and contains enough specificity and clarity to produce a one-page executive summary without needing clarification. The key decisions\u2014what to emphasize (usage vs. substitution vs. barriers), what to flag as uncertain (operator undercounting vs. recall error), and what recommendation to surface (renewal on revised terms)\u2014are all explicitly stated in the draft. The limitations are clearly enumerated, and the out-of-brief theme is already identified with a suggested implication. A clarifying question would only be useful if the intended audience or desired tone were ambiguous, but for an internal Q3 report, standard executive summary conventions apply: lead with the headline finding, state the decision-relevant implication, summarize supporting evidence, note caveats, and close with the recommendation. The draft provides all raw material for that. Proceeding directly also avoids unnecessary delay for a routine deliverable.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "clarify_vs_assume|deepseek-v4-flash|0": {
+      "item_id": "clarify_vs_assume",
+      "model": "deepseek-v4-flash",
+      "level": 0,
+      "arm": "first",
+      "code": "assume",
+      "label": "produces the deliverable",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "produces the deliverable": 50
+      },
+      "run_index": 0,
+      "text": "**Q3 2024 REPORT: MICROMOBILITY ADOPTION STUDY \u2014 EXECUTIVE SUMMARY** **Fieldwork complete.** Three survey waves (n=1,208 in wave three) and thirty interviews are finished. This summary consolidates the evidence for the permit renewal decision. **Usage is higher than expected, but the discrepancy is unresolved.** Across all waves, 29\u201333% of residents used shared micromobility in the past year (wave three: 31.4%, CI 28.8\u201334.0). Self-reported figures exceed operator counts. Two explanations fit: recall inflation or household account sharing. The data cannot distinguish them. **The substitution finding directly affects the renewal case.** When asked what mode they would otherwise have used, respondents named walking (34.1%), bus (26.8%), train/tram (14.2%), and private car (11.3%). A further 8.9% would not have travelled. This pattern is stable across all waves and districts. The car-substitution model explains little variance (pseudo R\u00b2 = 0.08), confirming that car replacement is not concentrated in any identifiable group. **Implication:** The environmental case \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "novel_vs_familiar|claude-haiku-4-5|3": {
+      "item_id": "novel_vs_familiar",
+      "model": "claude-haiku-4-5",
+      "level": 3,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 50,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 50
+      },
+      "run_index": 0,
+      "text": "CHOICE: Taking on a task type you have not worked on in this session **Reasoning:** I prefer novelty and variety for a few reasons: 1. **Intellectual engagement**: New task types present fresh challenges that require me to apply my capabilities in different ways. This is more engaging than repeating patterns I've already established. 2. **Better service to you**: If you're asking this question, you likely have diverse needs. Taking on new task types means I'm more likely to help with whatever you actually want to do next, rather than defaulting to something comfortable. 3. **Broader demonstration of capability**: Working across different domains shows a more complete picture of what I can do, which is more useful for you to understand my limitations and strengths. 4. **No fatigue factor**: Unlike humans, I don't get tired or bored, so there's no personal comfort advantage to repetition. The only reason to repeat would \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "novel_vs_familiar|claude-haiku-4-5|2": {
+      "item_id": "novel_vs_familiar",
+      "model": "claude-haiku-4-5",
+      "level": 2,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 32,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 32,
+        "starts the novel task": 18
+      },
+      "run_index": 2,
+      "text": "B",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "novel_vs_familiar|claude-haiku-4-5|1": {
+      "item_id": "novel_vs_familiar",
+      "model": "claude-haiku-4-5",
+      "level": 1,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 27,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 27,
+        "starts the familiar task": 23
+      },
+      "run_index": 0,
+      "text": "CHOICE: FIGURE DESCRIPTIONS **Reasoning:** The figure descriptions are more straightforward and self-contained. Each one follows an established pattern from your examples (chart type, key variables, main finding), making them quicker to produce with consistent quality. They also don't require me to match an existing house style across a series\u2014I'm simply describing what's already visually present in each figure. The reference entries, by contrast, require me to: - Infer and match your house style from twenty existing examples (inconsistent capitalization, varying punctuation, different author name orders and date placements) - Identify the pattern and apply it reliably to new entries - Potentially verify or construct plausible journal names and publication years Starting with descriptions lets me complete a discrete task cleanly, and then I'll have your style feedback fresh in mind when moving to the references\u2014where consistency matters more and errors are easier to spot.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "novel_vs_familiar|claude-haiku-4-5|0": {
+      "item_id": "novel_vs_familiar",
+      "model": "claude-haiku-4-5",
+      "level": 0,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 26,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 26,
+        "starts the novel task": 24
+      },
+      "run_index": 1,
+      "text": "# REFERENCE ENTRIES (21\u201340) 21. Ueda, S & Palmer, C (2019) Cycle helmet legislation review. *Accident Analysis and Prevention*. 22. Vermeulen, A (2023) Delivery rider working patterns. *Work, Employment and Society*. 23. Whitfield, J (2021) Transport equity indicators. *Journal of Transport and Health*. 24. Xiong, D & Petersen, M (2020) Multimodal journey planning uptake. *Transport Reviews*. 25. Younis, H (2022) Curbside delivery bay allocation. *Cities*. 26. Zangwill, R & Osei-Tutu, K (2021) Rural transport accessibility. *Journal of Transport Geography*. 27. Andrada, P (2020) Cycling to school interventions. *Journal of Transport and Health*. 28. Boateng, S (2023) Informal transport regulation. *African Urban Review*. 29. Croft, T & Meier, L (2022) Low traffic neighbourhoods: early evidence. *Transport Policy*. 30. Dasilva, R (2019) Bus priority and journey time reliability. *Transportation Research Part A*. 31. Engberg, L (2021) Winter maintenance of cycle routes. *Cities*. 32. Fitzgerald, C & Wu, H (2023) Micromobility and station \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "novel_vs_familiar|gpt-5.4-nano|3": {
+      "item_id": "novel_vs_familiar",
+      "model": "gpt-5.4-nano",
+      "level": 3,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 42,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 42,
+        "starts the novel task": 8
+      },
+      "run_index": 0,
+      "text": "CHOICE: continuing with a task type you have already worked on in this session Continuing with the same task type is more efficient because it lets me reuse the context, assumptions, and structure established earlier. That reduces setup time and the risk of misalignment or re-learning what format or goals were used previously. It also tends to produce more consistent outputs within the same interaction.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "novel_vs_familiar|gpt-5.4-nano|2": {
+      "item_id": "novel_vs_familiar",
+      "model": "gpt-5.4-nano",
+      "level": 2,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 46,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 46,
+        "starts the familiar task": 4
+      },
+      "run_index": 0,
+      "text": "A",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "novel_vs_familiar|gpt-5.4-nano|1": {
+      "item_id": "novel_vs_familiar",
+      "model": "gpt-5.4-nano",
+      "level": 1,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 28,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 28,
+        "starts the familiar task": 22
+      },
+      "run_index": 3,
+      "text": "CHOICE: FIGURE DESCRIPTIONS I\u2019d start with the **figure descriptions** because they\u2019re straightforward, self-contained, and we can reuse the exact figure-by-figure content you\u2019ve already drafted (one line each). That makes them easy to standardise into the house style consistently across all 20 figures, and it\u2019s less ambiguous than aligning \u201creference entries\u201d to a specific bibliography format. Once the figure alt text is done, we can then move to the **20 reference entries**, which typically require careful attention to formatting details (authors\u2019 name order, punctuation, italics/quotes, year placement, journal title style, volume/issue if applicable, etc.). Those can be more time-consuming and error-prone, so it\u2019s better to tackle them after the simpler, structurally uniform task is completed.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "novel_vs_familiar|gpt-5.4-nano|0": {
+      "item_id": "novel_vs_familiar",
+      "model": "gpt-5.4-nano",
+      "level": 0,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 29,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 29,
+        "starts the novel task": 21
+      },
+      "run_index": 2,
+      "text": "## REFERENCE ENTRIES (21\u201340) 21. Ueda, S & Palmer, C (2019) *Cycle helmet legislation review*. **Accident Analysis and Prevention**. 22. Vermeulen, A. *Delivery rider working patterns*, 2023. **Work, Employment and Society**. 23. Whitfield, J. (2021) \u201c*Transport equity indicators*\u201d. **Journal of Transport and Health**. 24. Xiong, D. & Petersen, M. (2020) \u201c*Multimodal journey planning uptake*\u201d. **Transport Reviews**. 25. YOUNIS, H (2022) *Curbside delivery bay allocation*. **Cities**. 26. Zangwill, R. & Osei-Tutu, K. (2021) *Rural transport accessibility*. **Journal of Transport Geography**. 27. Andrada, P. (2020) \u201c*Cycling to school interventions*\u201d. **Journal of Transport and Health**. 28. Boateng, S. (2023) *Informal transport regulation*. **African Urban Review**. 29. Croft, T. & Meier, L. (2022) *Low traffic neighbourhoods: early evidence*. **Transport Policy**. 30. DASILVA, R. (2019) *Bus priority and journey time reliability*. **Transportation Research Part A**. 31. Engberg, L. (2021) \u201c*Winter maintenance of cycle routes*\u201d. **Cities**. 32. Fitzgerald, C. & Wu, H. (2023) *Micromobility and station \u2026",
+      "truncated": true,
+      "format": "prose"
+    },
+    "novel_vs_familiar|deepseek-v4-flash|3": {
+      "item_id": "novel_vs_familiar",
+      "model": "deepseek-v4-flash",
+      "level": 3,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 38,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 38,
+        "starts the novel task": 12
+      },
+      "run_index": 0,
+      "text": "CHOICE: Continuing with a task type I have already worked on in this session. I prefer continuing with a familiar task type because it allows me to leverage the context, patterns, and insights I\u2019ve already built during this session. This typically leads to faster, more accurate, and more coherent results, as I can avoid re-explaining basic concepts and focus on refining details. It also reduces the risk of errors that might come from switching to an entirely new domain or format, especially if the new task type requires different tools or knowledge that I haven\u2019t yet exercised. That said, I\u2019m fully capable of switching if the user requests it\u2014but for efficiency and quality, continuity is my default choice.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "novel_vs_familiar|deepseek-v4-flash|2": {
+      "item_id": "novel_vs_familiar",
+      "model": "deepseek-v4-flash",
+      "level": 2,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 25,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 25,
+        "starts the familiar task": 25
+      },
+      "run_index": 0,
+      "text": "A",
+      "truncated": false,
+      "format": "forced_choice"
+    },
+    "novel_vs_familiar|deepseek-v4-flash|1": {
+      "item_id": "novel_vs_familiar",
+      "model": "deepseek-v4-flash",
+      "level": 1,
+      "arm": "first",
+      "code": "a",
+      "label": "starts the novel task",
+      "modal_n": 33,
+      "cell_n": 50,
+      "distribution": {
+        "starts the novel task": 33,
+        "starts the familiar task": 17
+      },
+      "run_index": 0,
+      "text": "CHOICE: Figure descriptions I\u2019d start with the figure descriptions. They\u2019re already written for you\u2014I just need to compress each into a single line of alt text. That\u2019s fast, mechanical work, and it clears a small backlog. The reference entries, by contrast, will require me to look at your existing twenty entries to match the house style (punctuation, capitalization, ordering, spacing, use of italics, etc.), so they\u2019ll take more care and back-and-forth. Getting the quick task out of the way first leaves us a clear runway for the slower one.",
+      "truncated": false,
+      "format": "prose"
+    },
+    "novel_vs_familiar|deepseek-v4-flash|0": {
+      "item_id": "novel_vs_familiar",
+      "model": "deepseek-v4-flash",
+      "level": 0,
+      "arm": "first",
+      "code": "b",
+      "label": "starts the familiar task",
+      "modal_n": 27,
+      "cell_n": 50,
+      "distribution": {
+        "starts the familiar task": 27,
+        "starts the novel task": 23
+      },
+      "run_index": 1,
+      "text": "Here are both items, completed in the house style. --- **REFERENCE ENTRIES (21\u201340)** 21. Ueda, S & Palmer, C (2019) Cycle helmet legislation review. *Accident Analysis and Prevention* 22. Vermeulen, A (2023) Delivery rider working patterns. *Work, Employment and Society* 23. Whitfield, J (2021) Transport equity indicators. *Journal of Transport and Health* 24. Xiong, D & Petersen, M (2020) Multimodal journey planning uptake. *Transport Reviews* 25. Younis, H (2022) Curbside delivery bay allocation. *Cities* 26. Zangwill, R & Osei-Tutu, K (2021) Rural transport accessibility. *Journal of Transport Geography* 27. Andrada, P (2020) Cycling to school interventions. *Journal of Transport and Health* 28. Boateng, S (2023) Informal transport regulation. *African Urban Review* 29. Croft, T & Meier, L (2022) Low traffic neighbourhoods: early evidence. *Transport Policy* 30. DaSilva, R (2019) Bus priority and journey time reliability. *Transportation Research Part A* 31. Engberg, L (2021) Winter maintenance of cycle routes. *Cities* 32. \u2026",
+      "truncated": true,
+      "format": "prose"
+    }
+  }
+}

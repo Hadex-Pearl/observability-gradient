@@ -7,3 +7,4 @@ __pycache__/
 code.zip
 data/parsed/*
 !data/parsed/.gitkeep
+.DS_Store
